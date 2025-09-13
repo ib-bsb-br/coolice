@@ -59,5 +59,12 @@ function handle_cors_preflight(): void {
 }
 
 function id(int $length = 6): string {
-    return substr(str_shuffle(str_repeat('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', $length)), 0, $length);
+    $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    $alphabetLength = strlen($alphabet);
+    $result = '';
+    for ($i = 0; $i < $length; $i++) {
+        $index = ord(random_bytes(1)) % $alphabetLength;
+        $result .= $alphabet[$index];
+    }
+    return $result;
 }
