@@ -24,7 +24,7 @@ def fetch_ical_events():
     try:
         response = requests.get(ICAL_URL, auth=HTTPDigestAuth(ICAL_USER, ICAL_PASS), timeout=15)
         response.raise_for_status()
-        
+
         calendar = Calendar.from_ical(response.text)
         events = []
         for component in calendar.walk():
@@ -41,7 +41,8 @@ def fetch_ical_events():
         print(f"Successfully fetched {len(events)} iCal events.")
         return events
     except requests.exceptions.RequestException as e:
-        print(f"Failed to access iCal feed. Status code: {e.response.status_code if e.response else 'N/A'}")
+        status_code = getattr(e.response, 'status_code', 'Connection Error')
+        print(f"Failed to access iCal feed. Status code: {status_code}")
         print(f"Error: {e}")
         return []
 
@@ -56,7 +57,8 @@ def fetch_published_notes():
         print(f"Successfully fetched {len(notes)} published notes.")
         return notes
     except requests.exceptions.RequestException as e:
-        print(f"Failed to access Central API. Status code: {e.response.status_code if e.response else 'N/A'}")
+        status_code = getattr(e.response, 'status_code', 'Connection Error')
+        print(f"Failed to access Central API. Status code: {status_code}")
         print(f"Error: {e}")
         return []
     except json.JSONDecodeError:
@@ -65,7 +67,7 @@ def fetch_published_notes():
 
 def main():
     """Main function to fetch all data and write to file."""
-    
+
     # Create the data directory if it doesn't exist
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
@@ -83,7 +85,7 @@ def main():
     print(f"Writing combined data to {OUTPUT_FILE}...")
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         json.dump(combined_data, f, indent=2, ensure_ascii=False)
-    
+
     print("Script finished successfully.")
 
 if __name__ == "__main__":
