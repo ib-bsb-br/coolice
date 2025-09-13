@@ -37,7 +37,7 @@ function get_pdo(): PDO {
         } catch (PDOException $e) {
             http_response_code(500);
             emit_json(['error' => 'Database connection failed.']);
-            exit;
+            exit(1);
         }
     }
     return $pdo;
