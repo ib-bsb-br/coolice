@@ -282,12 +282,6 @@
                     throw new Error(responseData.message || 'Failed to fetch file list.');
                 }
                 filesData = responseData.data || [];
-                // The backend now provides a 'creationDate' field. Let's ensure it exists for sorting.
-                filesData.forEach(f => {
-                    if (f.created_at && !f.creationDate) {
-                        f.creationDate = f.created_at;
-                    }
-                });
                 clearUserMessage('statusMessage');
                 renderTable();
             } catch (error) {
