@@ -1,7 +1,4 @@
 <?php
-// This is now a static file loader.
-// The slug is extracted from the URL query string `?b=...` by client-side JavaScript.
-// We keep the .php extension for hosting compatibility, but no server-side logic is executed here.
 $boardSlug = htmlspecialchars($_GET['b'] ?? 'public', ENT_QUOTES, 'UTF-8');
 ?>
 <!doctype html>
@@ -99,8 +96,8 @@ let isSyncing = false;
 let boardData = {title:'My Todo', tasks:[], created:Date.now()/1000|0, updated:Date.now()/1000|0};
 let filter = localStorage.getItem('memor_filter') || 'all';
 let searchQuery = localStorage.getItem('memor_search') || '';
-let pendingEdit = null; // {id, orig}
-let lastAction = null; // for undo
+let pendingEdit = null;
+let lastAction = null;
 let undoTimer = null;
 const outboxKey = (b) => `memor_outbox_${b}`;
 const recentBoardsKey = 'memor_recent_boards_v1';
@@ -109,12 +106,9 @@ const recentBoardsKey = 'memor_recent_boards_v1';
 document.addEventListener('DOMContentLoaded', main);
 
 function main() {
-  // Register SW
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js', {scope:'/'}));
   }
-
-  // Set up UI and fetch initial data
   setupUI();
   attachEventListeners();
   fetchBoard(true);
@@ -122,16 +116,13 @@ function main() {
 }
 
 function setupUI() {
-  // Online/offline indicators
   updateOnlineUI();
   window.addEventListener('online', () => { updateOnlineUI(); flushOutbox(); fetchBoard(true); });
   window.addEventListener('offline', updateOnlineUI);
 
-  // Copy/share URL setup
   const boardURL = `${origin}/?b=${encodeURIComponent(bid)}`;
   shareUrl.value = boardURL;
 
-  // Set initial filter UI from localStorage
   chips.forEach(ch => {
     const isActive = ch.getAttribute('data-filter') === filter;
     ch.classList.toggle('active', isActive);
@@ -141,7 +132,6 @@ function setupUI() {
 }
 
 // --- CORE LOGIC ---
-
 async function fetchBoard(force = false) {
   const url = `${API_BASE_URL}/tasks/${encodeURIComponent(bid)}`;
   try {
@@ -158,7 +148,6 @@ async function fetchBoard(force = false) {
 }
 
 async function op(payload, opts = {}) {
-  // Optimistic UI update for speed
   if (!opts.silent) {
     const optimisticData = applyOperationOptimistically(boardData, payload);
     render(optimisticData);
@@ -173,20 +162,16 @@ async function op(payload, opts = {}) {
     if (!r.ok) throw new Error('Bad response');
     const d = await r.json();
     if (d.error) throw new Error(d.error);
-
-    // Server is source of truth, re-render with its response
     render(d);
     return d;
   } catch (e) {
     queueOp(payload);
     if (!opts.silent) flash('Queued (offline)', 1500);
-    // No need to re-render, optimistic update is already shown
     return null;
   }
 }
 
 // --- OFFLINE & QUEUING ---
-
 function queueOp(payload) {
   const k = outboxKey(bid);
   const arr = JSON.parse(localStorage.getItem(k) || '[]');
@@ -210,7 +195,7 @@ async function flushOutbox() {
       localStorage.setItem(k, JSON.stringify(arr));
     }
     flash('Synced', 1000);
-    await fetchBoard(true); // Fetch definitive state after sync
+    await fetchBoard(true);
   } catch (e) {
     flash('Sync failed, will retry later.', 2000);
   } finally {
@@ -224,7 +209,6 @@ function updateOnlineUI() {
 }
 
 // --- RENDER & UI HELPERS ---
-
 function render(d) {
   boardData = d;
   title.value = d.title || 'My Todo';
@@ -279,7 +263,7 @@ let flashTimer = null;
 function flash(msg, persistMs = 1500) {
   clearTimeout(flashTimer);
   statusEl.textContent = msg;
-  srmsg.textContent = msg; // For screen readers
+  srmsg.textContent = msg;
   if (persistMs > 0) {
     flashTimer = setTimeout(() => { statusEl.textContent = ''; srmsg.textContent = ''; }, persistMs);
   }
@@ -328,7 +312,38 @@ function attachEventListeners() {
   title.onkeydown = e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { title.value = titleOrig; e.target.blur(); }};
   $('#saveTitle').onclick = () => title.blur();
 
-  $('#clearDone').onclick = () => op({op:'clear_done'}).then(()=>flash('Cleared completed'));
+  // Undo support for clear_done and delete
+  function showUndo(action) {
+    lastAction = action; // {type, payload}
+    undoBtn.style.display = 'inline-block';
+    clearTimeout(undoTimer);
+    undoTimer = setTimeout(() => { hideUndo(); }, 10000);
+  }
+  function hideUndo() {
+    lastAction = null;
+    undoBtn.style.display = 'none';
+  }
+  undoBtn.onclick = async () => {
+    if (!lastAction) return;
+    const act = lastAction;
+    hideUndo();
+    if (act.type === 'del') {
+      const t = act.payload;
+      await op({op:'add', text: t.text});
+      flash('Undid delete', 1000);
+    } else if (act.type === 'clear_done') {
+      for (const t of act.payload) {
+        await op({op:'add', text: t.text});
+      }
+      flash('Restored completed', 1200);
+    }
+  };
+
+  $('#clearDone').onclick = () => {
+    const cleared = (boardData.tasks||[]).filter(t=>t.done);
+    if (!cleared.length) { flash('No completed tasks', 1200); return; }
+    op({op:'clear_done'}).then(()=>{ flash('Cleared completed'); showUndo({type:'clear_done', payload: cleared}); });
+  };
   $('#clearAll').onclick = () => confirm('Delete all tasks?') && op({op:'clear_all'}).then(()=>flash('All cleared'));
   $('#toggleAll').onclick = () => {
     const anyActive = (boardData.tasks||[]).some(t=>!t.done);
@@ -356,7 +371,7 @@ function attachEventListeners() {
     searchQuery = e.target.value.trim();
     localStorage.setItem('memor_search', searchQuery);
     render(boardData);
-  };
+  });
 
   list.addEventListener('change', e => {
     const id = e.target.dataset.id;
@@ -365,8 +380,10 @@ function attachEventListeners() {
 
   list.addEventListener('click', e => {
     const delId = e.target.dataset.del;
-    if (delId) op({op:'del', id: delId}).then(()=>flash('Deleted'));
-
+    if (delId) {
+      const t = (boardData.tasks||[]).find(x=>x.id===delId);
+      op({op:'del', id: delId}).then(()=>{ flash('Deleted'); if (t) showUndo({type:'del', payload: t}); });
+    }
     const pubId = e.target.dataset.pub;
     if (pubId) op({op:'publish', id: pubId}).then(()=>flash('Published!'));
   });
@@ -405,12 +422,9 @@ function attachEventListeners() {
   }, true);
 }
 
-
-// --- OPTIMISTIC UPDATES ---
-// This function applies changes to the local data immediately for a faster UI feel.
-// The server response will eventually overwrite this, providing consistency.
+// Optimistic update
 function applyOperationOptimistically(data, payload) {
-    let newData = JSON.parse(JSON.stringify(data)); // Deep copy
+    let newData = JSON.parse(JSON.stringify(data));
     const { op, id, text, done, order } = payload;
 
     switch (op) {
@@ -439,8 +453,8 @@ function applyOperationOptimistically(data, payload) {
             newData.tasks = [];
             break;
         case 'reorder':
-             const taskMap = new Map(newData.tasks.map(t => [t.id, t]));
-             newData.tasks = order.map(orderedId => taskMap.get(orderedId)).filter(Boolean);
+            const taskMap = new Map(newData.tasks.map(t => [t.id, t]));
+            newData.tasks = order.map(orderedId => taskMap.get(orderedId)).filter(Boolean);
             break;
         case 'publish':
             newData.tasks.forEach(t => { if (t.id === id) t.is_published = 1; });

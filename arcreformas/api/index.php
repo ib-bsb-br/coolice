@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/../../src/common.php';
 
 // Handle CORS pre-flight requests for cross-domain JS
 handle_cors_preflight();
