@@ -372,6 +372,7 @@ function attachEventListeners() {
     localStorage.setItem('memor_search', searchQuery);
     render(boardData);
   });
+
   list.addEventListener('change', e => {
     const id = e.target.dataset.id;
     if (id && e.target.type === 'checkbox') op({op:'toggle', id});
