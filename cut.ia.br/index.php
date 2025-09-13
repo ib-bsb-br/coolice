@@ -191,7 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && empty($op)) {
   $url = trim((string)($_POST['url'] ?? ''));
   if (!filter_var($url, FILTER_VALIDATE_URL)) { http_response_code(400); echo 'Invalid URL.'; exit; }
   $slug = id(5); // Use the common ID generator
-  $pdo->prepare('INSERT INTO links(slug,url,created_at) VALUES(?,?,?)')->execute([$slug,$url,time()]);
+  $pdo->prepare('INSERT INTO links(slug,url,created_at) VALUES(?, ?, CURRENT_TIMESTAMP)')->execute([$slug, $url]);
   $short = $domain . '/?s=' . $slug;
   echo '<!doctype html><meta charset="utf-8"><title>Shortened</title><p>Short link: <a href="'.esc($short).'">'.esc($short).'</a></p><p><a href="'.esc($domain).'">Create another</a></p>'; exit;
 }
