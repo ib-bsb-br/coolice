@@ -30,7 +30,9 @@
       <a href="https://cut.ia.br" title="Capture and Tools">Gateway</a>
       <a href="https://ib-bsb-br.github.io/" title="Public Site" target="_blank" rel="noopener">Published</a>
     </nav>
-    <div class="header-bar dark:bg-gray-800"> <h1 class="text-white">Advanced File Storage & Pastebin</h1></div>
+    <div class="header-bar dark:bg-gray-800">
+        <h1 class="text-white">Advanced File Storage & Pastebin</h1>
+    </div>
 
     <div class="container dark:bg-gray-800 dark:border-gray-700">
         <div id="uploadSection" class="dark:bg-gray-700 dark:border-gray-600">
@@ -89,8 +91,6 @@
                         <th data-sort="displayType" title="Sort by Type" aria-sort="none" class="dark:text-gray-300">Type</th>
                         <th data-sort="size" class="size-cell dark:text-gray-400" title="Sort by Size" aria-sort="none">Size</th>
                         <th data-sort="lastModified" class="date-cell dark:text-gray-400" title="Sort by Last Modified" aria-sort="none">Last Modified</th>
-                        <th data-sort="creationDate" class="date-cell hidden-sm dark:text-gray-400" title="Sort by Creation Date" aria-sort="none">Created</th>
-                        <th class="dark:text-gray-300" title="Actions">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="fileTableBody" class="dark:bg-gray-800"></tbody>
@@ -185,8 +185,10 @@
                 if (subtype === 'jpeg') return 'jpg';
                 if (subtype === 'svg+xml') return 'svg';
                 if (subtype.startsWith('vnd.')) {
-                    const specific = subtype.substring(4);
-                    if (specific === 'microsoft.icon') return 'ico';
+                     const specific = subtype.substring(4);
+                     if (specific === 'microsoft.icon') {
+                        return 'ico';
+                     }
                 }
                 return subtype.split('+')[0];
             }
@@ -252,25 +254,6 @@
                 row.insertCell().outerHTML = `<td class="dark:text-gray-300">${item.displayType || 'File'}</td>`;
                 row.insertCell().outerHTML = `<td class="size-cell dark:text-gray-400">${formatSize(item.size)}</td>`;
                 row.insertCell().outerHTML = `<td class="date-cell dark:text-gray-400">${formatDate(item.lastModified)}</td>`;
-                row.insertCell().outerHTML = `<td class="date-cell hidden-sm dark:text-gray-400">${formatDate(item.creationDate)}</td>`;
-
-                const actionsTd = row.insertCell();
-                const delBtn = document.createElement('button');
-                delBtn.className = 'action-btn btn-del';
-                delBtn.textContent = 'Delete';
-                delBtn.setAttribute('data-action', 'delete');
-                delBtn.setAttribute('data-id', item.id);
-                actionsTd.appendChild(delBtn);
-
-                if (PUBLISH_ENABLED) {
-                    const pubBtn = document.createElement('button');
-                    pubBtn.className = 'action-btn btn-pub';
-                    pubBtn.textContent = 'Publish';
-                    pubBtn.setAttribute('data-action', 'publish');
-                    pubBtn.setAttribute('data-name', item.name);
-                    pubBtn.setAttribute('data-url', item.url);
-                    actionsTd.appendChild(pubBtn);
-                }
             });
 
             if (!statusMessageEl.classList.contains('error-message')) {
