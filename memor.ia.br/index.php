@@ -439,8 +439,8 @@ function applyOperationOptimistically(data, payload) {
             newData.tasks = [];
             break;
         case 'reorder':
-             const taskMap = new Map(newData.tasks.map(t => [t.id, t]));
-             newData.tasks = order.map(orderedId => taskMap.get(orderedId)).filter(Boolean);
+            const taskMap = new Map(newData.tasks.map(t => [t.id, t]));
+            newData.tasks = order.map(orderedId => taskMap.get(orderedId)).filter(Boolean);
             break;
         case 'publish':
             newData.tasks.forEach(t => { if (t.id === id) t.is_published = 1; });
