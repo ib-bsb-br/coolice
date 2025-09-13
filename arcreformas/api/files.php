@@ -206,7 +206,7 @@ function delete_file_by_id(string $id): void {
         $del = $pdo->prepare("DELETE FROM files WHERE id = ?");
         $del->execute([$id]);
         $pdo->commit();
-    } catch (Throwable $e) {
+    } catch (PDOException $e) {
         $pdo->rollBack();
         emit_json(['error' => 'Failed to delete file record.'], 500);
         return;
