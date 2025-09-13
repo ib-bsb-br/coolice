@@ -287,7 +287,7 @@
                 filesData = responseData.data || [];
                 // The backend now provides a 'creationDate' field. Let's ensure it exists for sorting.
                 filesData.forEach(f => {
-                    if (f.created_at && !f.creationDate) {
+                    if ('created_at' in f && !('creationDate' in f)) {
                         f.creationDate = f.created_at;
                     }
                 });
