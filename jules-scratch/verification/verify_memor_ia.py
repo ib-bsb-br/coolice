@@ -18,7 +18,6 @@ def run(playwright):
     expect(undo_button).to_have_text('Undo')
 
     # Take a screenshot
-    current_dir = os.path.dirname(os.path.abspath(__file__))
     screenshot_path = os.path.join(current_dir, 'memor_ia_verification.png')
     page.screenshot(path=screenshot_path)
 
