@@ -251,8 +251,8 @@
                 row.insertCell().outerHTML = `<td class="dark:text-gray-300">${item.displayType || 'File'}</td>`;
                 row.insertCell().outerHTML = `<td class="size-cell dark:text-gray-400">${formatSize(item.size)}</td>`;
                 row.insertCell().outerHTML = `<td class="date-cell dark:text-gray-400">${formatDate(item.lastModified)}</td>`;
-                // The backend maps created_at to creationDate for sorting consistency
-                row.insertCell().outerHTML = `<td class="date-cell hidden-sm dark:text-gray-400">${formatDate(item.creationDate)}</td>`;
+                // Use creationDate for consistency with the sorting key
+                row.insertCell().outerHTML = '<td class="date-cell hidden-sm dark:text-gray-400">' + formatDate(item.creationDate) + '</td>';
             });
 
             if (!statusMessageEl.classList.contains('error-message')) {
