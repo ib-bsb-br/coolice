@@ -1,6 +1,16 @@
 <?php
 declare(strict_types=1);
 
+function sanitize_filename(string $filename): string {
+    // Remove characters that are illegal in most filesystems or could be used for traversal.
+    $filename = str_replace(['..', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '_', $filename);
+    // Remove control characters
+    $filename = preg_replace('/[\x00-\x1F\x7F]/u', '', $filename);
+    // Trim whitespace and dots from the ends
+    $filename = trim($filename, ' .-_');
+    return $filename ?: 'unnamed_file';
+}
+
 function handle_files_request(?string $id): void {
     $method = $_SERVER['REQUEST_METHOD'];
 
@@ -51,18 +61,12 @@ function upload_new_file(): void {
     // Sanitize the filename
     $client_filename = $file['name'];
     $pathinfo = pathinfo($client_filename);
-    $base = preg_replace("/([^A-Za-z0-9_\-\.]|[\.]{2,})/", '', $pathinfo['filename']);
-    $base = ltrim($base, '._-');
-    $base = $base ?: 'unnamed_file';
+    $base = sanitize_filename($pathinfo['filename']);
     $ext = isset($pathinfo['extension']) ? '.' . strtolower($pathinfo['extension']) : '';
 
-    // Ensure a unique filename in the upload directory
-    $counter = 0;
-    $unique_filename = $base . $ext;
-    while (file_exists(UPLOAD_DIR . $unique_filename)) {
-        $counter++;
-        $unique_filename = $base . '_' . $counter . $ext;
-    }
+    // Append a short random string to the filename to prevent race conditions and overwrites.
+    $unique_id = bin2hex(random_bytes(4)); // 8 hex characters
+    $unique_filename = $base . '-' . $unique_id . $ext;
 
     $destination = UPLOAD_DIR . $unique_filename;
 
@@ -84,15 +88,26 @@ function upload_new_file(): void {
             // Use cURL to make a fire-and-forget POST to our own tasks API.
             // This is an internal, server-to-server call.
             $ch = curl_init();
-            // Assuming the API is on the same host. Adjust if not.
-            $tasks_api_url = 'https://' . $_SERVER['HTTP_HOST'] . '/api/tasks/inbox';
+            $tasks_api_url = API_INTERNAL_URL . '/tasks/inbox';
             curl_setopt($ch, CURLOPT_URL, $tasks_api_url);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $taskPayload);
             curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 2); // Use a short timeout; don't make the user wait.
-            curl_exec($ch);
+
+            // Execute the call and add error logging for robustness
+            $curl_response = curl_exec($ch);
+            if ($curl_response === false) {
+                // Log cURL errors (e.g., connection timeout)
+                error_log("Failed to create task for '{$unique_filename}': cURL error: " . curl_error($ch));
+            } else {
+                $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                if ($http_code < 200 || $http_code >= 300) {
+                    // Log API errors (e.g., 4xx or 5xx responses from the tasks API)
+                    error_log("Failed to create task for '{$unique_filename}': HTTP status {$http_code}, response: {$curl_response}");
+                }
+            }
             curl_close($ch);
             // --- END WORKFLOW ---
 

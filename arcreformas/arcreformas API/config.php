@@ -14,7 +14,7 @@ define('DB_PASS', 'your_database_password');
 // and you want to store files one level above it for security.
 // Adjust if your structure is different. A common setup is a `storage`
 // or `uploads` directory alongside `public_html`.
-define('UPLOAD_DIR', realpath(__DIR__ . '/../..') . '/storage_arcreformas/');
+define('UPLOAD_DIR', __DIR__ . '/../../storage_arcreformas/');
 
 // The public-facing base URL for accessing the files.
 // This MUST correspond to how the UPLOAD_DIR is served. If it's outside the
@@ -22,14 +22,29 @@ define('UPLOAD_DIR', realpath(__DIR__ . '/../..') . '/storage_arcreformas/');
 // For simplicity, we'll assume a symlink or direct mapping for now.
 define('FILE_PUBLIC_URL', 'https://arcreformas.com.br/files/');
 
+// The base URL for internal, server-to-server API calls.
+// Using a fixed constant is more secure than relying on $_SERVER['HTTP_HOST'].
+define('API_INTERNAL_URL', 'https://arcreformas.com.br/api');
+
 
 // --- GITHUB PUBLISHING CONFIGURATION ---
 // Create a GitHub Personal Access Token (classic) with 'repo' and 'workflow' scopes.
-// It is recommended to store this token in a file outside the web root and read it from there,
-// but for simplicity in this frictionless setup, we define it here.
-define('GITHUB_TOKEN', 'your_github_personal_access_token_here');
+// It is strongly recommended to store this token in an environment variable named 'GITHUB_TOKEN'.
+// For example, in Apache you can use `SetEnv GITHUB_TOKEN your_token_here` in your .htaccess or vhost config.
+// The constant below is used as a fallback for simpler setups.
+define('GITHUB_TOKEN', getenv('GITHUB_TOKEN') ?: 'your_github_personal_access_token_here');
 define('GITHUB_REPO', 'ib-bsb-br/ib-bsb-br.github.io'); // The owner/repo slug
 define('GITHUB_WORKFLOW_ID', 'refresh-content.yml'); // The workflow filename
+
+// Validate that a real token is available if publishing is intended.
+// This check is here to fail early if the configuration is incomplete.
+// Note: This simple check runs on every API call. In a more complex app,
+// this might be moved to a dedicated health check endpoint.
+if (empty(getenv('GITHUB_TOKEN')) && GITHUB_TOKEN === 'your_github_personal_access_token_here') {
+    // The publish feature will fail if no valid token is provided.
+    // Log a warning for the administrator to make this easier to debug.
+    error_log('[WARNING] GITHUB_TOKEN is not set via environment variable and the fallback placeholder is being used. GitHub publishing will fail.');
+}
 
 
 // --- GENERAL HELPERS ---
@@ -81,6 +96,10 @@ function id(int $length = 6): string {
 
 // Ensure upload directory exists
 if (!is_dir(UPLOAD_DIR)) {
-    @mkdir(UPLOAD_DIR, 0755, true);
+    // The second is_dir() check handles a potential race condition.
+    if (!mkdir(UPLOAD_DIR, 0755, true) && !is_dir(UPLOAD_DIR)) {
+        // Log the error for the administrator.
+        error_log('Failed to create upload directory: ' . UPLOAD_DIR);
+    }
 }
 ?>

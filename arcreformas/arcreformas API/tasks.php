@@ -10,13 +10,9 @@ function handle_tasks_request(?string $board_slug): void {
     $method = $_SERVER['REQUEST_METHOD'];
     $pdo = get_pdo();
 
-    // Ensure board exists, or create it on demand
-    $stmt = $pdo->prepare("SELECT slug FROM boards WHERE slug = ?");
-    $stmt->execute([$board_slug]);
-    if (!$stmt->fetch()) {
-        $stmt = $pdo->prepare("INSERT INTO boards (slug, title) VALUES (?, ?)");
-        $stmt->execute([$board_slug, 'Board: ' . htmlspecialchars($board_slug)]);
-    }
+    // Ensure board exists, or create it on demand. This requires a UNIQUE index on the 'slug' column.
+    $stmt = $pdo->prepare("INSERT IGNORE INTO boards (slug, title) VALUES (?, ?)");
+    $stmt->execute([$board_slug, 'Board: ' . htmlspecialchars($board_slug)]);
 
     switch ($method) {
         case 'GET':
@@ -43,13 +39,13 @@ function get_board_state(PDO $pdo, string $board_slug): array {
     $stmt = $pdo->prepare("SELECT id, text, is_done AS done, created_at AS ts FROM tasks WHERE board_slug = ? ORDER BY sort_order ASC, created_at ASC");
     $stmt->execute([$board_slug]);
     $tasks = $stmt->fetchAll();
-    
+
     // Convert timestamps to unix timestamps for JS
     $board['created'] = strtotime($board['created_at']);
     $board['updated'] = strtotime($board['updated_at']);
     unset($board['created_at'], $board['updated_at']);
 
-    foreach($tasks as &$task) {
+    foreach ($tasks as &$task) {
         $task['done'] = (bool)$task['done'];
         $task['ts'] = strtotime($task['ts']);
     }
@@ -113,7 +109,7 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                 $stmt = $pdo->prepare("DELETE FROM tasks WHERE board_slug = ?");
                 $stmt->execute([$board_slug]);
                 break;
-            
+
             case 'reorder':
                 $order = $input['order'] ?? [];
                 if (is_array($order)) {
@@ -123,7 +119,7 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                     }
                 }
                 break;
-            
+
             case 'publish': // New operation for PKM
                 $id = (string)($input['id'] ?? '');
                 $stmt = $pdo->prepare("UPDATE tasks SET is_published = 1 WHERE id = ? AND board_slug = ?");
@@ -135,7 +131,7 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                     $ch = curl_init();
                     $url = "https://api.github.com/repos/" . GITHUB_REPO . "/actions/workflows/" . GITHUB_WORKFLOW_ID . "/dispatches";
                     $payload = json_encode(['ref' => 'main']);
-                    
+
                     curl_setopt($ch, CURLOPT_URL, $url);
                     curl_setopt($ch, CURLOPT_POST, 1);
                     curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
@@ -146,7 +142,17 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                     ));
                     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($ch, CURLOPT_TIMEOUT, 5); // Fire-and-forget
-                    curl_exec($ch);
+
+                    $curl_response = curl_exec($ch);
+                    if ($curl_response === false) {
+                        error_log("GitHub Actions dispatch failed: cURL error: " . curl_error($ch));
+                    } else {
+                        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                        // GitHub returns 204 No Content on success
+                        if ($http_code !== 204) {
+                            error_log("GitHub Actions dispatch failed: HTTP status {$http_code}, response: {$curl_response}");
+                        }
+                    }
                     curl_close($ch);
                 }
                 // --- END WORKFLOW ---
