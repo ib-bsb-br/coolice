@@ -18,6 +18,7 @@ function notify_cut_engine(string $fileUrl, string $filename, string $type, int 
         'size'      => $size,
         'timestamp' => time(),
     ]);
+    Log::event('info', 'dependency_call_started', ['system' => 'cut_engine', 'url' => CUT_WEBHOOK_URL]);
     $ch = curl_init(CUT_WEBHOOK_URL);
     curl_setopt_array($ch, [
         CURLOPT_POST           => true,
@@ -29,7 +30,10 @@ function notify_cut_engine(string $fileUrl, string $filename, string $type, int 
     ]);
     $resp = curl_exec($ch);
     if ($resp === false) {
+        Log::event('error', 'dependency_call_failed', ['system' => 'cut_engine', 'error' => curl_error($ch)]);
         error_log('CUT_WEBHOOK notify failed: ' . curl_error($ch));
+    } else {
+        Log::event('info', 'dependency_call_success', ['system' => 'cut_engine']);
     }
     curl_close($ch);
 }
@@ -72,6 +76,7 @@ function compute_files_etag_and_lastmod(array $files): array {
 }
 
 function get_all_files(): void {
+    Log::event('info', 'file_list_requested');
     $pdo = get_pdo();
     $stmt = $pdo->query("SELECT id, filename, filesize, mime_type, created_at FROM files ORDER BY created_at DESC");
     $files = $stmt->fetchAll();
@@ -98,19 +103,24 @@ function get_all_files(): void {
     }
     unset($file);
 
+    Log::event('info', 'file_list_success', ['count' => count($files)]);
     header('ETag: ' . $etag);
     header('Last-Modified: ' . $lastMod);
     emit_json(['status' => 'success', 'data' => $files]);
 }
 
 function upload_new_file(): void {
+    Log::event('info', 'file_upload_started');
+
     if (!isset($_FILES['fileToUpload'])) {
+        Log::event('warn', 'file_upload_failed', ['reason' => 'No file data in fileToUpload field']);
         emit_json(['error' => 'No file data received in fileToUpload field.'], 400);
         return;
     }
 
     $file = $_FILES['fileToUpload'];
     if ($file['error'] !== UPLOAD_ERR_OK) {
+        Log::event('error', 'file_upload_failed', ['reason' => 'Upload error code', 'code' => $file['error']]);
         emit_json(['error' => 'File upload error code: ' . $file['error']], 400);
         return;
     }
@@ -154,7 +164,9 @@ function upload_new_file(): void {
             $taskText = "Process new file: [{$unique_filename}]({$file_url})";
             $taskPayload = json_encode(['op' => 'add', 'text' => $taskText]);
 
-            $ch = curl_init(API_INTERNAL_URL . '/tasks/inbox');
+            $tasks_api_url = API_INTERNAL_URL . '/tasks/inbox';
+            Log::event('info', 'dependency_call_started', ['system' => 'self:tasks_api', 'url' => $tasks_api_url]);
+            $ch = curl_init($tasks_api_url);
             curl_setopt($ch, CURLOPT_POST, 1);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $taskPayload);
             curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
@@ -162,7 +174,10 @@ function upload_new_file(): void {
             curl_setopt($ch, CURLOPT_TIMEOUT, 2);
             $curl_response = curl_exec($ch);
             if ($curl_response === false) {
+                Log::event('error', 'dependency_call_failed', ['system' => 'self:tasks_api', 'error' => curl_error($ch)]);
                 error_log("Tasks API create task failed: " . curl_error($ch));
+            } else {
+                Log::event('info', 'dependency_call_success', ['system' => 'self:tasks_api']);
             }
             curl_close($ch);
 
@@ -171,6 +186,12 @@ function upload_new_file(): void {
             $typeKind = ($upload_source === 'paste_text') ? 'text' : (($upload_source === 'paste_image') ? 'image' : 'file');
             notify_cut_engine($file_url, $unique_filename, $typeKind, (int)$file['size']);
 
+            Log::event('info', 'file_upload_success', [
+                'file_id' => $new_file_id,
+                'filename' => $unique_filename,
+                'size' => (int)$file['size'],
+                'mime' => $mime,
+            ]);
             emit_json([
                 'status' => 'success',
                 'message' => 'File uploaded and task created: ' . htmlspecialchars($unique_filename),
@@ -181,19 +202,23 @@ function upload_new_file(): void {
 
         } catch (PDOException $e) {
             @unlink($destination);
+            Log::event('error', 'file_upload_failed', ['reason' => 'DB insert failed', 'error' => $e->getMessage()]);
             emit_json(['error' => 'Failed to save file metadata to database.'], 500);
         }
     } else {
+        Log::event('error', 'file_upload_failed', ['reason' => 'Move uploaded file failed', 'destination' => UPLOAD_DIR]);
         emit_json(['error' => 'Failed to move uploaded file. Check permissions for ' . UPLOAD_DIR], 500);
     }
 }
 
 function delete_file_by_id(string $id): void {
+    Log::event('info', 'file_delete_started', ['id' => $id]);
     $pdo = get_pdo();
     $stmt = $pdo->prepare("SELECT filename FROM files WHERE id = ?");
     $stmt->execute([$id]);
     $row = $stmt->fetch();
     if (!$row) {
+        Log::event('warn', 'file_delete_failed', ['id' => $id, 'reason' => 'File not found in DB']);
         emit_json(['error' => 'File not found.'], 404);
         return;
     }
@@ -208,17 +233,22 @@ function delete_file_by_id(string $id): void {
         $pdo->commit();
     } catch (PDOException $e) {
         $pdo->rollBack();
+        Log::event('error', 'file_delete_failed', ['id' => $id, 'reason' => 'DB delete failed', 'error' => $e->getMessage()]);
         emit_json(['error' => 'Failed to delete file record.'], 500);
         return;
     }
 
     if (is_file($path)) {
         if (!@unlink($path)) {
+            // This is a warning, not a failure of the request itself.
+            Log::event('warn', 'file_unlink_failed', ['id' => $id, 'filename' => $filename, 'path' => $path]);
             error_log("Warning: DB entry deleted but failed to unlink file: " . $path);
         }
     } else {
+        Log::event('info', 'file_already_unlinked', ['id' => $id, 'filename' => $filename, 'path' => $path]);
         error_log("Info: DB entry deleted; file already missing: " . $path);
     }
 
+    Log::event('info', 'file_delete_success', ['id' => $id, 'filename' => $filename]);
     emit_json(['status' => 'success', 'message' => 'Deleted', 'id' => $id, 'filename' => $filename]);
 }

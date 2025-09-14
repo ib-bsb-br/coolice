@@ -58,14 +58,20 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $op = $input['op'] ?? '';
 
+    Log::event('info', 'task_operation_started', ['board' => $board_slug, 'operation' => $op]);
+
     $pdo->beginTransaction();
     try {
         switch ($op) {
             case 'add':
                 $text = trim((string)($input['text'] ?? ''));
                 if ($text !== '') {
+                    $new_id = id();
                     $stmt = $pdo->prepare("INSERT INTO tasks (id, board_slug, text) VALUES (?, ?, ?)");
-                    $stmt->execute([id(), $board_slug, $text]);
+                    $stmt->execute([$new_id, $board_slug, $text]);
+                    Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'task_id' => $new_id]);
+                } else {
+                    Log::event('info', 'task_operation_skipped', ['board' => $board_slug, 'operation' => $op, 'reason' => 'Empty text']);
                 }
                 break;
 
@@ -73,6 +79,7 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                 $id = (string)($input['id'] ?? '');
                 $stmt = $pdo->prepare("UPDATE tasks SET is_done = !is_done WHERE id = ? AND board_slug = ?");
                 $stmt->execute([$id, $board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'task_id' => $id]);
                 break;
 
             case 'edit':
@@ -80,43 +87,52 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                 $text = trim((string)($input['text'] ?? ''));
                 $stmt = $pdo->prepare("UPDATE tasks SET text = ? WHERE id = ? AND board_slug = ?");
                 $stmt->execute([$text, $id, $board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'task_id' => $id]);
                 break;
 
             case 'del':
                 $id = (string)($input['id'] ?? '');
                 $stmt = $pdo->prepare("DELETE FROM tasks WHERE id = ? AND board_slug = ?");
                 $stmt->execute([$id, $board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'task_id' => $id]);
                 break;
 
             case 'title':
                 $title = trim((string)($input['title'] ?? 'My Board'));
                 $stmt = $pdo->prepare("UPDATE boards SET title = ? WHERE slug = ?");
                 $stmt->execute([$title, $board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op]);
                 break;
 
             case 'clear_done':
                 $stmt = $pdo->prepare("DELETE FROM tasks WHERE is_done = 1 AND board_slug = ?");
                 $stmt->execute([$board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'cleared_count' => $stmt->rowCount()]);
                 break;
 
             case 'set_all':
                 $done = (bool)($input['done'] ?? false);
                 $stmt = $pdo->prepare("UPDATE tasks SET is_done = ? WHERE board_slug = ?");
                 $stmt->execute([$done, $board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'updated_count' => $stmt->rowCount()]);
                 break;
 
             case 'clear_all':
                 $stmt = $pdo->prepare("DELETE FROM tasks WHERE board_slug = ?");
                 $stmt->execute([$board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'cleared_count' => $stmt->rowCount()]);
                 break;
 
             case 'reorder':
                 $order = $input['order'] ?? [];
                 if (is_array($order)) {
                     $reorder_stmt = $pdo->prepare("UPDATE tasks SET sort_order = ? WHERE id = ? AND board_slug = ?");
+                    $count = 0;
                     foreach ($order as $index => $task_id) {
                         $reorder_stmt->execute([(int)$index, (string)$task_id, $board_slug]);
+                        $count++;
                     }
+                    Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'reordered_count' => $count]);
                 }
                 break;
 
@@ -124,10 +140,12 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                 $id = (string)($input['id'] ?? '');
                 $stmt = $pdo->prepare("UPDATE tasks SET is_published = 1 WHERE id = ? AND board_slug = ?");
                 $stmt->execute([$id, $board_slug]);
+                Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'task_id' => $id]);
 
                 // --- BEGIN "Process -> Publish" WORKFLOW ---
                 // After flagging the task, trigger the GitHub Actions workflow for instant publishing.
                 if (defined('GITHUB_TOKEN') && GITHUB_TOKEN !== 'your_github_personal_access_token_here') {
+                    Log::event('info', 'github_dispatch_started', ['workflow' => GITHUB_WORKFLOW_ID]);
                     $ch = curl_init();
                     $url = "https://api.github.com/repos/" . GITHUB_REPO . "/actions/workflows/" . GITHUB_WORKFLOW_ID . "/dispatches";
                     $payload = json_encode(['ref' => 'main']);
@@ -145,12 +163,15 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
 
                     $curl_response = curl_exec($ch);
                     if ($curl_response === false) {
+                        Log::event('error', 'github_dispatch_failed', ['reason' => 'cURL error', 'error' => curl_error($ch)]);
                         error_log("GitHub Actions dispatch failed: cURL error: " . curl_error($ch));
                     } else {
                         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                        // GitHub returns 204 No Content on success
-                        if ($http_code !== 204) {
+                        if ($http_code !== 204) { // GitHub returns 204 No Content on success
+                            Log::event('error', 'github_dispatch_failed', ['reason' => 'Non-204 status', 'status' => $http_code, 'response' => $curl_response]);
                             error_log("GitHub Actions dispatch failed: HTTP status {$http_code}, response: {$curl_response}");
+                        } else {
+                            Log::event('info', 'github_dispatch_success', ['workflow' => GITHUB_WORKFLOW_ID]);
                         }
                     }
                     curl_close($ch);
@@ -160,6 +181,7 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
 
             default:
                 // Do nothing, just fetch the state
+                Log::event('info', 'task_operation_skipped', ['board' => $board_slug, 'operation' => $op, 'reason' => 'Unknown operation']);
                 break;
         }
 
@@ -169,6 +191,12 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
 
     } catch (Exception $e) {
         $pdo->rollBack();
+        Log::event('error', 'task_operation_failed', [
+            'board' => $board_slug,
+            'operation' => $op,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
         emit_json(['error' => 'Database operation failed: ' . $e->getMessage()], 500);
         return;
     }
