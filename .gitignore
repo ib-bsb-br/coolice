@@ -1,0 +1,51 @@
+# Deployment and environment files
+storage_arcreformas/
+*.log
+.env
+.env.local
+
+# Configuration files with sensitive data
+**/config.php.local
+**/database.conf
+
+# Temporary files
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
+
+# Build and development artifacts  
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Deployment scripts output
+deployment-*.log
+sync-*.log
+
+# Backup files
+*.backup
+*.orig
+
+# Cache directories
+cache/
+tmp/
+
+# Jekyll specific
+jekyll_static_site/_site/
+jekyll_static_site/.sass-cache/
+jekyll_static_site/.jekyll-cache/
+jekyll_static_site/.jekyll-metadata
+
+# File uploads and user content
+uploads/
+files/
+attachments/
