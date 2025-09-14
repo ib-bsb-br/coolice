@@ -101,6 +101,9 @@ rsync -avz --exclude='.git' ./arcreformas/ username@server:/public_html/arcrefor
 rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/public_html/cut.ia.br/
 rsync -avz --exclude='.git' ./src/ username@server:/public_html/shared/src/
 
+# Upload Jekyll static site to main domain (if using Jekyll for coolice.com)
+rsync -avz --exclude='.git' ./jekyll_static_site/_site/ username@server:/public_html/coolice.com/
+
 # Create and upload storage directory
 rsync -avz --exclude='.git' ./storage_arcreformas/ username@server:/public_html/shared/storage_arcreformas/
 
