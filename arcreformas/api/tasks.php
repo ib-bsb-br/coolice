@@ -69,7 +69,11 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
                     $new_id = id();
                     $stmt = $pdo->prepare("INSERT INTO tasks (id, board_slug, text) VALUES (?, ?, ?)");
                     $stmt->execute([$new_id, $board_slug, $text]);
-                    Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'task_id' => $new_id]);
+                    if ($stmt->rowCount() > 0) {
+                        Log::event('info', 'task_operation_success', ['board' => $board_slug, 'operation' => $op, 'task_id' => $new_id]);
+                    } else {
+                        Log::event('warning', 'task_operation_failed', ['board' => $board_slug, 'operation' => $op, 'task_id' => $new_id, 'reason' => 'Insert failed']);
+                    }
                 } else {
                     Log::event('info', 'task_operation_skipped', ['board' => $board_slug, 'operation' => $op, 'reason' => 'Empty text']);
                 }
