@@ -1,5 +1,5 @@
 # Deployment and environment files
-storage_arcreformas/
+arcreformas.com.br/storage_arcreformas/
 *.log
 .env
 .env.local

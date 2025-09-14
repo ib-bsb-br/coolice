@@ -62,7 +62,7 @@ echo ""
 
 # 3. Web application directories - 755 for directories, 644 for files
 set_perms_recursive "memor.ia.br" 755 644 "Todo/task management app"
-set_perms_recursive "arcreformas" 755 644 "File storage and API backend" 
+set_perms_recursive "arcreformas.com.br" 755 644 "File storage and API backend"
 set_perms_recursive "cut.ia.br" 755 644 "Gateway/capture tools"
 set_perms_recursive "src" 755 644 "Shared PHP utilities"
 
@@ -80,7 +80,7 @@ echo ""
 echo "4. Setting up storage directories..."
 
 # Create storage directory for arcreformas if it doesn't exist
-STORAGE_DIR="storage_arcreformas"
+STORAGE_DIR="arcreformas.com.br/storage_arcreformas"
 if [[ ! -d "$STORAGE_DIR" ]]; then
     mkdir -p "$STORAGE_DIR"
     echo "✓ Created $STORAGE_DIR directory"
