@@ -32,7 +32,11 @@ class Log {
             $logRecord['context'] = $context;
         }
 
-        // Using @ to suppress errors if stdout is closed, e.g., in a daemonized process
-        @fwrite(STDOUT, json_encode($logRecord, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL);
+        // Write to STDOUT, and log to error_log if it fails
+        $logLine = json_encode($logRecord, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        $bytesWritten = fwrite(STDOUT, $logLine);
+        if ($bytesWritten === false || $bytesWritten < strlen($logLine)) {
+            error_log('Failed to write log to STDOUT: ' . $logLine);
+        }
     }
 }
