@@ -18,8 +18,12 @@ if [[ "$DESTINATION_PATH" == "/replace/with/your/directadmin/custom/nginx/path/a
   exit 1
 fi
 
+if [[ ! -f "$SOURCE_CONFIG" ]]; then
+  echo -e "\033[0;31mERROR: Source configuration file '$SOURCE_CONFIG' not found.\033[0m"
+  exit 1
+fi
+
 echo "Copying '$SOURCE_CONFIG' to '$DESTINATION_PATH'..."
-[ -f "$DESTINATION_PATH" ] && cp -v "$DESTINATION_PATH" "${DESTINATION_PATH}.bak"
 cp -v "$SOURCE_CONFIG" "$DESTINATION_PATH"
 
 echo -e "\033[0;32m✓ Configuration file copied successfully.\033[0m"
