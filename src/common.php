@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 // --- GENERAL HELPERS ---
 
-function send_cors_headers(): void {
+function send_cors_headers(): void
+{
     header('X-Content-Type-Options: nosniff');
     // Allow cors based on whitelist; fall back to *
     $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
@@ -23,7 +25,8 @@ function send_cors_headers(): void {
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
 }
 
-function get_pdo(): PDO {
+function get_pdo(): PDO
+{
     static $pdo = null;
     if ($pdo === null) {
         $dsn = 'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4';
@@ -43,7 +46,8 @@ function get_pdo(): PDO {
     return $pdo;
 }
 
-function emit_json(mixed $data, int $statusCode = 200): void {
+function emit_json(mixed $data, int $statusCode = 200): void
+{
     global $request_start_time;
     if (isset($request_start_time)) {
         $duration_ms = (microtime(true) - $request_start_time) * 1000;
@@ -71,7 +75,8 @@ function emit_json(mixed $data, int $statusCode = 200): void {
     echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 }
 
-function handle_cors_preflight(): void {
+function handle_cors_preflight(): void
+{
     if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
         send_cors_headers();
         http_response_code(204); // No Content
@@ -79,6 +84,7 @@ function handle_cors_preflight(): void {
     }
 }
 
-function id(int $length = 6): string {
+function id(int $length = 6): string
+{
     return substr(str_shuffle(str_repeat('0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', $length)), 0, $length);
 }

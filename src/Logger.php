@@ -1,12 +1,15 @@
 <?php
+
 declare(strict_types=1);
 
-class Log {
+class Log
+{
     private static ?string $requestId = null;
     private static string $serviceName = 'arcreformas.com.br-api';
     private static string $environment = 'production'; // This could be loaded from an env var
 
-    public static function setRequestId(string $id): void {
+    public static function setRequestId(string $id): void
+    {
         self::$requestId = $id;
     }
 
@@ -17,7 +20,8 @@ class Log {
      * @param string $message The primary log message.
      * @param array<mixed> $context Optional key-value pairs for additional context.
      */
-    public static function event(string $level, string $message, array $context = []): void {
+    public static function event(string $level, string $message, array $context = []): void
+    {
         $logRecord = [
             'timestamp' => gmdate('Y-m-d\TH:i:s') . '.' . sprintf('%03d', (int)((microtime(true) * 1000) % 1000)) . 'Z',
             'level' => strtoupper($level),

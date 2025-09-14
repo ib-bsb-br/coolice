@@ -5,6 +5,7 @@ This guide provides step-by-step instructions for deploying this multi-site proj
 ## Architecture Overview
 
 This project is designed for a modern, high-performance hosting stack:
+
 - **Web Server:** Standalone Nginx (no Apache, no .htaccess).
 - **Backend:** PHP-FPM for processing PHP scripts.
 - **Control Panel:** DirectAdmin (or similar with SSH/Terminal access).
@@ -82,6 +83,7 @@ This project requires a custom Nginx configuration to handle API request routing
 
 2.  **Run the Deployment Script:**
     Execute the script from your terminal on the server. This will copy the required Nginx rules to the location you specified.
+
     ```bash
     ./apply-nginx-config.sh
     ```
@@ -94,6 +96,7 @@ This project requires a custom Nginx configuration to handle API request routing
 Upload the application directories to their corresponding `public_html` (or equivalent) web root directories on your server.
 
 #### Example Directory Structure on Server:
+
 ```
 /home/ibbsbbry/domains/
 ├── arcreformas.com.br/
@@ -106,6 +109,7 @@ Upload the application directories to their corresponding `public_html` (or equi
 ```
 
 #### Example Upload Command (using rsync):
+
 ```bash
 # Using rsync (upload each domain separately to correct locations)
 rsync -avz --exclude='.git' --exclude='storage_arcreformas/' ./arcreformas.com.br/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
@@ -113,6 +117,7 @@ rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/home/ibbsbbry/domains/
 rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/home/ibbsbbry/domains/memor.ia.br/public_html/
 rsync -avz --exclude='.git' ./src/ username@server:/home/ibbsbbry/domains/src/
 ```
+
 **Note:** The `jekyll_static_site` directory is managed and deployed separately and should not be uploaded with this project.
 
 ### 6. Set Up Domain Mapping
@@ -122,13 +127,13 @@ Ensure your domains are mapped to the correct `public_html` directories in your 
 ### 7. Test Deployment
 
 1.  **Test main sites:**
-    -   https://memor.ia.br
-    -   https://cut.ia.br
+    - https://memor.ia.br
+    - https://cut.ia.br
 
 2.  **Test API endpoints:**
-    -   `https://arcreformas.com.br/api/tasks/public`
-    -   `https://arcreformas.com.br/api/files`
-    These should now work correctly without a `.htaccess` file.
+    - `https://arcreformas.com.br/api/tasks/public`
+    - `https://arcreformas.com.br/api/files`
+      These should now work correctly without a `.htaccess` file.
 
 3.  **Test file upload functionality.**
 
@@ -155,19 +160,21 @@ The process remains the same. Pull changes locally, run `./set-permissions.sh`, 
 
 ### Common Issues & Solutions
 
--   **Permission Problems:** Re-run `./set-permissions.sh`.
--   **502/504 Gateway Errors:** This often points to an issue with PHP-FPM or the Nginx configuration. Check your server's Nginx error logs.
--   **404 Not Found on API endpoints:** This means the custom Nginx rules are not being applied correctly. Double-check the path in `apply-nginx-config.sh` and ensure you reloaded Nginx.
+- **Permission Problems:** Re-run `./set-permissions.sh`.
+- **502/504 Gateway Errors:** This often points to an issue with PHP-FPM or the Nginx configuration. Check your server's Nginx error logs.
+- **404 Not Found on API endpoints:** This means the custom Nginx rules are not being applied correctly. Double-check the path in `apply-nginx-config.sh` and ensure you reloaded Nginx.
 
 ## Security Best Practices
 
 ✅ **Implemented:**
+
 - Secure file permissions (644/755).
 - Standalone Nginx architecture (no .htaccess vulnerabilities).
 - Input validation and prepared statements.
 - CORS origin restrictions.
 
 ⚠️ **Additional Recommendations:**
+
 - Enable HTTPS for all domains.
 - Use environment variables for sensitive data.
 - Implement rate limiting on API endpoints.

@@ -1,7 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
-function handle_tasks_request(?string $board_slug): void {
+function handle_tasks_request(?string $board_slug): void
+{
     if (empty($board_slug)) {
         emit_json(['error' => 'Board slug not specified.'], 400);
         return;
@@ -41,7 +43,8 @@ function handle_tasks_request(?string $board_slug): void {
     }
 }
 
-function get_board_state(PDO $pdo, string $board_slug): array {
+function get_board_state(PDO $pdo, string $board_slug): array
+{
     $stmt = $pdo->prepare("SELECT title, created_at, updated_at FROM boards WHERE slug = ?");
     $stmt->execute([$board_slug]);
     $board = $stmt->fetch();
@@ -67,7 +70,8 @@ function get_board_state(PDO $pdo, string $board_slug): array {
     return $board;
 }
 
-function handle_task_operations(PDO $pdo, string $board_slug): void {
+function handle_task_operations(PDO $pdo, string $board_slug): void
+{
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $op = $input['op'] ?? '';
 
@@ -161,4 +165,3 @@ function handle_task_operations(PDO $pdo, string $board_slug): void {
 
     emit_json(get_board_state($pdo, $board_slug));
 }
-?>

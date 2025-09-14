@@ -1,7 +1,9 @@
 <?php
+
 declare(strict_types=1);
 
-function handle_links_request(?string $slug): void {
+function handle_links_request(?string $slug): void
+{
     $method = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
@@ -21,7 +23,8 @@ function handle_links_request(?string $slug): void {
     }
 }
 
-function get_long_link(string $slug): void {
+function get_long_link(string $slug): void
+{
     $pdo = get_pdo();
     $stmt = $pdo->prepare("SELECT url FROM links WHERE slug = ?");
     $stmt->execute([$slug]);
@@ -37,7 +40,8 @@ function get_long_link(string $slug): void {
     }
 }
 
-function create_short_link(): void {
+function create_short_link(): void
+{
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $url = trim((string)($input['url'] ?? ''));
 
@@ -65,7 +69,8 @@ function create_short_link(): void {
     }
 }
 
-function generate_unique_slug(PDO $pdo, int $length = 5): string {
+function generate_unique_slug(PDO $pdo, int $length = 5): string
+{
     $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     $max_attempts = 10;
     for ($i = 0; $i < $max_attempts; $i++) {
@@ -82,4 +87,3 @@ function generate_unique_slug(PDO $pdo, int $length = 5): string {
     // Fallback if we can't find a unique slug after several tries
     return 'long_' . id(4);
 }
-?>

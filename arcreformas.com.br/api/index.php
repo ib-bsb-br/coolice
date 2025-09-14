@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
@@ -66,4 +67,3 @@ try {
     ]);
     emit_json(['error' => 'An internal server error occurred.'], 500);
 }
-?>

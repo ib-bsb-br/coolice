@@ -1,15 +1,20 @@
 <?php
+
 declare(strict_types=1);
 
-function sanitize_filename(string $filename): string {
+function sanitize_filename(string $filename): string
+{
     $filename = str_replace(['..', '/', '\\', ':', '*', '?', '"', '<', '>', '|'], '_', $filename);
     $filename = preg_replace('/[\x00-\x1F\x7F]/u', '', $filename);
     $filename = trim($filename, " .-_");
     return $filename ?: 'unnamed_file';
 }
 
-function notify_cut_engine(string $fileUrl, string $filename, string $type, int $size): void {
-    if (!defined('CUT_WEBHOOK_URL') || CUT_WEBHOOK_URL === '') return;
+function notify_cut_engine(string $fileUrl, string $filename, string $type, int $size): void
+{
+    if (!defined('CUT_WEBHOOK_URL') || CUT_WEBHOOK_URL === '') {
+        return;
+    }
     $payload = json_encode([
         'source'    => 'arcreformas.com.br',
         'type'      => $type, // file | text | image
@@ -38,7 +43,8 @@ function notify_cut_engine(string $fileUrl, string $filename, string $type, int 
     curl_close($ch);
 }
 
-function handle_files_request(?string $id): void {
+function handle_files_request(?string $id): void
+{
     $method = $_SERVER['REQUEST_METHOD'];
 
     switch ($method) {
@@ -61,21 +67,25 @@ function handle_files_request(?string $id): void {
     }
 }
 
-function compute_files_etag_and_lastmod(array $files): array {
+function compute_files_etag_and_lastmod(array $files): array
+{
     $count = count($files);
     $totalSize = 0;
     $lastModTs = 0;
     foreach ($files as $f) {
         $totalSize += (int)$f['filesize'];
         $ts = strtotime((string)$f['created_at']);
-        if ($ts > $lastModTs) $lastModTs = $ts;
+        if ($ts > $lastModTs) {
+            $lastModTs = $ts;
+        }
     }
     $etag = '"' . md5($count . ':' . $totalSize . ':' . $lastModTs) . '"';
     $lastModHeader = gmdate('D, d M Y H:i:s', $lastModTs ?: time()) . ' GMT';
     return [$etag, $lastModHeader];
 }
 
-function get_all_files(): void {
+function get_all_files(): void
+{
     Log::event('info', 'file_list_requested');
     $pdo = get_pdo();
     $stmt = $pdo->query("SELECT id, filename, filesize, mime_type, created_at FROM files ORDER BY created_at DESC");
@@ -109,7 +119,8 @@ function get_all_files(): void {
     emit_json(['status' => 'success', 'data' => $files]);
 }
 
-function upload_new_file(): void {
+function upload_new_file(): void
+{
     Log::event('info', 'file_upload_started');
 
     if (!isset($_FILES['fileToUpload'])) {
@@ -126,7 +137,7 @@ function upload_new_file(): void {
     }
 
     if (MAX_SERVER_FILE_SIZE > 0 && (int)$file['size'] > MAX_SERVER_FILE_SIZE) {
-        emit_json(['error' => 'File too large. Max ' . number_format(MAX_SERVER_FILE_SIZE / (1024*1024), 0) . ' MB'], 413);
+        emit_json(['error' => 'File too large. Max ' . number_format(MAX_SERVER_FILE_SIZE / (1024 * 1024), 0) . ' MB'], 413);
         return;
     }
 
@@ -147,7 +158,9 @@ function upload_new_file(): void {
         $finfo = @finfo_open(FILEINFO_MIME_TYPE);
         if ($finfo) {
             $detected = @finfo_file($finfo, $file['tmp_name']);
-            if ($detected) $mime = $detected;
+            if ($detected) {
+                $mime = $detected;
+            }
             @finfo_close($finfo);
         }
     }
@@ -211,7 +224,8 @@ function upload_new_file(): void {
     }
 }
 
-function delete_file_by_id(string $id): void {
+function delete_file_by_id(string $id): void
+{
     Log::event('info', 'file_delete_started', ['id' => $id]);
     $pdo = get_pdo();
     $stmt = $pdo->prepare("SELECT filename FROM files WHERE id = ?");
