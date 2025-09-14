@@ -44,6 +44,17 @@ function get_pdo(): PDO {
 }
 
 function emit_json(mixed $data, int $statusCode = 200): void {
+    global $request_start_time;
+    $duration_ms = (microtime(true) - ($request_start_time ?? microtime(true))) * 1000;
+
+    // The logger may not be loaded if there was a very early exit (e.g. in config)
+    if (class_exists('Log')) {
+        Log::event('info', 'request_finished', [
+            'status_code' => $statusCode,
+            'duration_ms' => (int)$duration_ms,
+        ]);
+    }
+
     http_response_code($statusCode);
     send_cors_headers();
     header('Content-Type: application/json; charset=utf-8');
