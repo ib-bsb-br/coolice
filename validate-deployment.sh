@@ -5,6 +5,9 @@
 
 set -e
 
+# Temporarily disable exit on error for find commands that might access restricted directories
+set +e
+
 echo "=== COOLICE DEPLOYMENT READINESS CHECK ==="
 echo ""
 
@@ -62,15 +65,15 @@ echo ""
 # 1. File Permissions
 echo "=== FILE PERMISSIONS ==="
 check "Directory permissions are 755" \
-      "[[ \$(find . -maxdepth 1 -type d -name 'memor.ia.br' -perm 755 | wc -l) -eq 1 ]]" \
-      "Web directories have proper read/execute permissions"
+      "[[ \$(find . -maxdepth 1 -type d \( -name 'memor.ia.br' -o -name 'arcreformas' -o -name 'cut.ia.br' -o -name 'src' -o -name 'jekyll_static_site' -o -name 'storage_arcreformas' \) -perm 755 | wc -l) -eq \$(find . -maxdepth 1 -type d \( -name 'memor.ia.br' -o -name 'arcreformas' -o -name 'cut.ia.br' -o -name 'src' -o -name 'jekyll_static_site' -o -name 'storage_arcreformas' \) | wc -l) ]]" \
+      "All application directories have proper read/execute permissions"
 
 check "PHP files are 644" \
-      "[[ \$(find . -name '*.php' -not -path './.git*' -perm 644 | wc -l) -eq \$(find . -name '*.php' -not -path './.git*' | wc -l) ]]" \
+      "[[ \$(find . -name '*.php' -not -path './.git*' -perm 644 2>/dev/null | wc -l) -eq \$(find . -name '*.php' -not -path './.git*' 2>/dev/null | wc -l) ]]" \
       "PHP files are readable but not world-writable"
 
 check ".htaccess files are 644" \
-      "[[ \$(find . -name '.htaccess' -perm 644 | wc -l) -eq \$(find . -name '.htaccess' | wc -l) ]]" \
+      "[[ \$(find . -name '.htaccess' -perm 644 2>/dev/null | wc -l) -eq \$(find . -name '.htaccess' 2>/dev/null | wc -l) ]]" \
       "Web server configuration files have correct permissions"
 
 check "No world-writable files" \

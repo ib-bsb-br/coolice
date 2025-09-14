@@ -93,6 +93,7 @@ set_perms_recursive "$STORAGE_DIR" 755 644 "File upload storage"
 echo ""
 echo "5. Setting script permissions..."
 set_perms "set-permissions.sh" 755 "Permission setup script"
+set_perms "validate-deployment.sh" 755 "Deployment validation script"
 
 # 8. Database schema file
 set_perms "db_schema.sql" 644 "Database schema file"
