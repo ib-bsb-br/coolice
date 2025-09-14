@@ -10,7 +10,7 @@ define('DB_PASS', 'your_database_password');
 
 // --- FILE STORAGE CONFIGURATION ---
 // Note: UPLOAD_DIR is now relative to the project root for consistency.
-define('UPLOAD_DIR', __DIR__ . '/../../storage_arcreformas/');
+define('UPLOAD_DIR', '/home/ibbsbbry/domains/arcreformas.com.br/storage_arcreformas/');
 define('FILE_PUBLIC_URL', 'https://arcreformas.com.br/files/');
 
 // Base URL for internal server-to-server API calls (Tasks API)

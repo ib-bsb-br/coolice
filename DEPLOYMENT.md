@@ -62,7 +62,7 @@ cd coolice
 ### 3. Configure Application Settings
 
 #### For arcreformas.com.br (API Backend):
-Edit `arcreformas/api/config.php`:
+Edit `arcreformas.com.br/api/config.php`:
 
 ```php
 // Database configuration
@@ -72,7 +72,7 @@ define('DB_USER', 'your_db_user');       // Your database username
 define('DB_PASS', 'your_db_password');   // Your database password
 
 // File storage (points to shared storage directory)
-define('UPLOAD_DIR', __DIR__ . '/../shared/storage_arcreformas/');
+define('UPLOAD_DIR', '/home/ibbsbbry/domains/arcreformas.com.br/storage_arcreformas/');
 define('FILE_PUBLIC_URL', 'https://arcreformas.com.br/files/');
 
 // CORS origins (restrict in production)
@@ -83,29 +83,26 @@ define('ALLOWED_ORIGINS', 'https://memor.ia.br,https://cut.ia.br,https://coolice
 
 #### Directory Structure on Server:
 ```
-public_html/
-├── coolice.com/          # Main site (root domain)
-├── memor.ia.br/          # Todo/task management
-├── arcreformas.com.br/   # File storage & API 
-├── cut.ia.br/            # Gateway/tools
-└── shared/
-    ├── src/              # Common PHP utilities  
-    └── storage_arcreformas/ # File uploads
+/home/ibbsbbry/domains/
+├── arcreformas.com.br/
+│   ├── public_html/
+│   └── storage_arcreformas/
+├── cut.ia.br/
+│   └── public_html/
+└── memor.ia.br/
+    └── public_html/
 ```
 
 #### Upload Command Examples:
 ```bash
 # Using rsync (upload each domain separately to correct locations)
-rsync -avz --exclude='.git' coolice.com/ memor.ia.br/ arcreformas.com.br/ cut.ia.br/ shared/ username@server:/public_html/
-rsync -avz --exclude='.git' ./arcreformas/ username@server:/public_html/arcreformas.com.br/
-rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/public_html/cut.ia.br/
-rsync -avz --exclude='.git' ./src/ username@server:/public_html/shared/src/
+rsync -avz --exclude='.git' ./arcreformas.com.br/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
+rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/home/ibbsbbry/domains/cut.ia.br/public_html/
+rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/home/ibbsbbry/domains/memor.ia.br/public_html/
+rsync -avz --exclude='.git' ./src/ username@server:/home/ibbsbbry/domains/src/
 
 # Upload Jekyll static site to main domain (if using Jekyll for coolice.com)
-rsync -avz --exclude='.git' ./jekyll_static_site/_site/ username@server:/public_html/coolice.com/
-
-# Create and upload storage directory
-rsync -avz --exclude='.git' ./storage_arcreformas/ username@server:/public_html/shared/storage_arcreformas/
+rsync -avz --exclude='.git' ./jekyll_static_site/_site/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
 
 # Or via FTP client (FileZilla, WinSCP, etc.) - upload each directory to its corresponding location
 # Note: Verify permissions are preserved during upload
@@ -114,10 +111,9 @@ rsync -avz --exclude='.git' ./storage_arcreformas/ username@server:/public_html/
 ### 5. Set Up Domain Mapping
 
 Configure your hosting control panel to map domains:
-- `coolice.com` → `/public_html/coolice.com/`
-- `memor.ia.br` → `/public_html/memor.ia.br/`  
-- `arcreformas.com.br` → `/public_html/arcreformas.com.br/`
-- `cut.ia.br` → `/public_html/cut.ia.br/`
+- `arcreformas.com.br` → `/home/ibbsbbry/domains/arcreformas.com.br/public_html/`
+- `memor.ia.br` → `/home/ibbsbbry/domains/memor.ia.br/public_html/`
+- `cut.ia.br` → `/home/ibbsbbry/domains/cut.ia.br/public_html/`
 
 ### 6. Test Deployment
 
@@ -140,13 +136,13 @@ After deployment, verify security settings:
 
 ```bash
 # Check no world-writable files exist
-find public_html/ -type f -perm -002
+find /home/ibbsbbry/domains/ -type f -perm -002
 
 # Verify .htaccess files are in place
-find public_html/ -name ".htaccess" -ls
+find /home/ibbsbbry/domains/ -name ".htaccess" -ls
 
 # Check storage directory isolation
-ls -la public_html/shared/storage_arcreformas/
+ls -la /home/ibbsbbry/domains/arcreformas.com.br/storage_arcreformas/
 ```
 
 ## Maintenance
@@ -161,7 +157,9 @@ ls -la public_html/shared/storage_arcreformas/
 
 2. **Upload changed files:**
    ```bash
-   rsync -avz --exclude='.git' ./ username@server:/public_html/
+   rsync -avz --exclude='.git' ./arcreformas.com.br/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
+   rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/home/ibbsbbry/domains/cut.ia.br/public_html/
+   rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/home/ibbsbbry/domains/memor.ia.br/public_html/
    ```
 
 ### Backup Strategy

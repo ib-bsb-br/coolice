@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 // Load shared configuration and common functions
-require_once __DIR__ . '/../arcreformas/api/config.php';
+require_once __DIR__ . '/../arcreformas.com.br/api/config.php';
 require_once __DIR__ . '/../src/common.php';
 
 
@@ -61,7 +61,7 @@ if ($op === 'new-item' && $_SERVER['REQUEST_METHOD']==='POST') {
   if ($url === '') emit_json(['error'=>'Missing url'], 400);
   $task = "Process new {$type}: [{$filename}]({$url})";
 
-  // Use the arcreformas tasks API to add the task
+  // Use the arcreformas.com.br tasks API to add the task
   $taskPayload = json_encode(['op' => 'add', 'text' => $task]);
   $ch = curl_init(API_INTERNAL_URL . '/tasks/inbox');
   curl_setopt($ch, CURLOPT_POST, 1);

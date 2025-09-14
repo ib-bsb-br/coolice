@@ -65,7 +65,7 @@ echo ""
 # 1. File Permissions
 echo "=== FILE PERMISSIONS ==="
 check "Directory permissions are 755" \
-      "[[ \$(find . -maxdepth 1 -type d \( -name 'memor.ia.br' -o -name 'arcreformas' -o -name 'cut.ia.br' -o -name 'src' -o -name 'jekyll_static_site' -o -name 'storage_arcreformas' \) -perm 755 | wc -l) -eq \$(find . -maxdepth 1 -type d \( -name 'memor.ia.br' -o -name 'arcreformas' -o -name 'cut.ia.br' -o -name 'src' -o -name 'jekyll_static_site' -o -name 'storage_arcreformas' \) | wc -l) ]]" \
+      "[[ \$(find . -maxdepth 1 -type d \( -name 'memor.ia.br' -o -name 'arcreformas.com.br' -o -name 'cut.ia.br' -o -name 'src' -o -name 'jekyll_static_site' \) -perm 755 | wc -l) -eq \$(find . -maxdepth 1 -type d \( -name 'memor.ia.br' -o -name 'arcreformas.com.br' -o -name 'cut.ia.br' -o -name 'src' -o -name 'jekyll_static_site' \) | wc -l) ]]" \
       "All application directories have proper read/execute permissions"
 
 check "PHP files are 644" \
@@ -85,11 +85,11 @@ echo ""
 # 2. Project Structure
 echo "=== PROJECT STRUCTURE ==="
 check "Main application directories exist" \
-      "[[ -d 'memor.ia.br' && -d 'arcreformas' && -d 'cut.ia.br' && -d 'src' ]]" \
+      "[[ -d 'memor.ia.br' && -d 'arcreformas.com.br' && -d 'cut.ia.br' && -d 'src' ]]" \
       "All required application components present"
 
 check "Storage directory exists" \
-      "[[ -d 'storage_arcreformas' ]]" \
+      "[[ -d 'arcreformas.com.br/storage_arcreformas' ]]" \
       "File upload storage directory created"
 
 check "Common utilities exist" \
@@ -105,21 +105,21 @@ echo ""
 # 3. Configuration Files
 echo "=== CONFIGURATION ==="
 check "API configuration exists" \
-      "[[ -f 'arcreformas/api/config.php' ]]" \
+      "[[ -f 'arcreformas.com.br/api/config.php' ]]" \
       "Backend API configuration file present"
 
 check ".htaccess rewrite rules exist" \
-      "[[ -f 'arcreformas/.htaccess' ]]" \
+      "[[ -f 'arcreformas.com.br/.htaccess' ]]" \
       "URL rewriting configuration present"
 
 # Check for placeholder values in config
-if [[ -f 'arcreformas/api/config.php' ]]; then
-    if grep -q "your_database_name" arcreformas/api/config.php; then
+if [[ -f 'arcreformas.com.br/api/config.php' ]]; then
+    if grep -q "your_database_name" arcreformas.com.br/api/config.php; then
         warn "Database configuration contains placeholders" \
-             "Edit arcreformas/api/config.php with actual database credentials"
+             "Edit arcreformas.com.br/api/config.php with actual database credentials"
     fi
     
-    if grep -q "your_github_personal_access_token_here" arcreformas/api/config.php; then
+    if grep -q "your_github_personal_access_token_here" arcreformas.com.br/api/config.php; then
         warn "GitHub token not configured" \
              "Set GITHUB_TOKEN environment variable or edit config.php for publishing features"
     fi
@@ -130,15 +130,15 @@ echo ""
 # 4. Web Files
 echo "=== WEB ASSETS ==="
 check "Main application entry points exist" \
-      "[[ -f 'memor.ia.br/index.php' && -f 'arcreformas/index.html' && -f 'cut.ia.br/index.php' ]]" \
+      "[[ -f 'memor.ia.br/index.php' && -f 'arcreformas.com.br/index.html' && -f 'cut.ia.br/index.php' ]]" \
       "All web application entry points available"
 
 check "Styling files exist" \
-      "[[ -f 'memor.ia.br/style.css' && -f 'arcreformas/style.css' && -f 'cut.ia.br/style.css' ]]" \
+      "[[ -f 'memor.ia.br/style.css' && -f 'arcreformas.com.br/style.css' && -f 'cut.ia.br/style.css' ]]" \
       "CSS styling files present"
 
 check "API endpoints exist" \
-      "[[ -f 'arcreformas/api/index.php' && -f 'arcreformas/api/tasks.php' && -f 'arcreformas/api/files.php' ]]" \
+      "[[ -f 'arcreformas.com.br/api/index.php' && -f 'arcreformas.com.br/api/tasks.php' && -f 'arcreformas.com.br/api/files.php' ]]" \
       "Backend API endpoints available"
 
 echo ""
@@ -146,11 +146,11 @@ echo ""
 # 5. Security Checks
 echo "=== SECURITY VERIFICATION ==="
 check "No executable web files" \
-      "[[ -z \$(find memor.ia.br arcreformas cut.ia.br -name '*.php' -perm -111 2>/dev/null || true) ]]" \
+      "[[ -z \$(find memor.ia.br arcreformas.com.br cut.ia.br -name '*.php' -perm -111 2>/dev/null || true) ]]" \
       "PHP files are not executable (security best practice)"
 
 check "Storage directory isolated" \
-      "[[ -d 'storage_arcreformas' && \$(stat -c '%a' storage_arcreformas) == '755' ]]" \
+      "[[ -d 'arcreformas.com.br/storage_arcreformas' && \$(stat -c '%a' arcreformas.com.br/storage_arcreformas) == '755' ]]" \
       "Upload storage has safe permissions"
 
 check "Deployment guide exists" \
@@ -174,7 +174,7 @@ if [[ $FAILED -eq 0 ]]; then
     echo ""
     echo "Next steps:"
     echo "1. Review and address any warnings above"
-    echo "2. Configure database credentials in arcreformas/api/config.php"
+    echo "2. Configure database credentials in arcreformas.com.br/api/config.php"
     echo "3. Upload files to your shared hosting account"
     echo "4. Follow the steps in DEPLOYMENT.md"
     echo "5. Test all functionality after deployment"

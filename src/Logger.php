@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 class Log {
     private static ?string $requestId = null;
-    private static string $serviceName = 'arcreformas-api';
+    private static string $serviceName = 'arcreformas.com.br-api';
     private static string $environment = 'production'; // This could be loaded from an env var
 
     public static function setRequestId(string $id): void {

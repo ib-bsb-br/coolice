@@ -6,7 +6,7 @@ def run(playwright):
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # Go up three levels from jules-scratch/verification to the repo root
     repo_root = os.path.abspath(os.path.join(current_dir, '..', '..'))
-    file_path = os.path.join(repo_root, 'arcreformas', 'index.html')
+    file_path = os.path.join(repo_root, 'arcreformas.com.br', 'index.html')
 
     # Ensure the file exists before trying to navigate
     if not os.path.exists(file_path):
