@@ -1,13 +1,22 @@
-# Shared Hosting Deployment Guide for coolice.com
+# Standalone Nginx Hosting Deployment Guide
 
-This guide provides step-by-step instructions for deploying the coolice project to shared hosting environments with proper security permissions.
+This guide provides step-by-step instructions for deploying this multi-site project to a shared hosting environment that uses a **standalone Nginx web server**, such as CooliceHost with DirectAdmin.
+
+## Architecture Overview
+
+This project is designed for a modern, high-performance hosting stack:
+- **Web Server:** Standalone Nginx (no Apache, no .htaccess).
+- **Backend:** PHP-FPM for processing PHP scripts.
+- **Control Panel:** DirectAdmin (or similar with SSH/Terminal access).
+
+All URL rewriting and request routing is handled directly by Nginx configuration, not `.htaccess` files.
 
 ## Prerequisites
 
-- Shared hosting account with PHP 7.4+ support
-- MySQL database access  
-- FTP/SFTP access to hosting account
-- Domain names configured (coolice.com, memor.ia.br, arcreformas.com.br, cut.ia.br)
+- Shared hosting account with **standalone Nginx** and PHP 7.4+ support.
+- SSH or Terminal access for running scripts.
+- MySQL database access.
+- Domain names configured (e.g., memor.ia.br, arcreformas.com.br, cut.ia.br).
 
 ## File Permission Requirements
 
@@ -17,22 +26,16 @@ The project has been configured with security-first permissions suitable for sha
 
 - **Directories: 755** (owner: read/write/execute, others: read/execute only)
 - **Files: 644** (owner: read/write, others: read only)
-- **No world-writable files/folders** (prevents security exploits)
 
 ### Automated Permission Setting
 
-Use the included script to set all permissions correctly:
+Use the included script to set all permissions correctly before deployment:
 
 ```bash
 ./set-permissions.sh
 ```
 
-This script:
-- ✅ Sets secure directory permissions (755)
-- ✅ Sets secure file permissions (644)
-- ✅ Creates storage directories with proper isolation
-- ✅ Verifies no world-writable files exist
-- ✅ Provides security verification report
+This script ensures all files and directories have secure permissions and that deployment scripts are executable.
 
 ## Deployment Steps
 
@@ -49,97 +52,96 @@ cd coolice
 
 ### 2. Database Setup
 
-1. Create MySQL databases on your hosting account:
-   - `coolice_main` (for task/file data)
-   
-2. Import the database schema:
-   ```sql
-   mysql -u username -p coolice_main < db_schema.sql
-   ```
-
-3. Note your database credentials for configuration.
+1.  Create a MySQL database on your hosting account (e.g., `coolice_main`).
+2.  Import the database schema:
+    ```bash
+    mysql -u YOUR_USERNAME -p YOUR_DB_NAME < db_schema.sql
+    ```
+3.  Note your database credentials for the next step.
 
 ### 3. Configure Application Settings
 
-#### For arcreformas.com.br (API Backend):
-Edit `arcreformas.com.br/api/config.php`:
+Edit the API backend configuration file at `arcreformas.com.br/api/config.php` with your database credentials:
 
 ```php
 // Database configuration
-define('DB_HOST', 'localhost');           // Usually localhost on shared hosting
-define('DB_NAME', 'your_db_name');       // e.g., coolice_main
-define('DB_USER', 'your_db_user');       // Your database username
-define('DB_PASS', 'your_db_password');   // Your database password
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'YOUR_DB_NAME');
+define('DB_USER', 'YOUR_DB_USER');
+define('DB_PASS', 'YOUR_DB_PASSWORD');
 
-// File storage (points to shared storage directory)
-define('UPLOAD_DIR', '/home/ibbsbbry/domains/arcreformas.com.br/storage_arcreformas/');
-define('FILE_PUBLIC_URL', 'https://arcreformas.com.br/files/');
-
-// CORS origins (restrict in production)
-define('ALLOWED_ORIGINS', 'https://memor.ia.br,https://cut.ia.br,https://coolice.com');
+// ... other settings
 ```
 
-### 4. Upload Files via FTP/SFTP
+### 4. Configure Web Server (Nginx)
 
-#### Directory Structure on Server:
+This project requires a custom Nginx configuration to handle API request routing.
+
+1.  **Edit the Deployment Script:**
+    Open the `apply-nginx-config.sh` script. You **must** update the `DESTINATION_PATH` variable to the correct location for custom Nginx include files for your `arcreformas.com.br` domain. The script contains comments with common examples for DirectAdmin.
+
+2.  **Run the Deployment Script:**
+    Execute the script from your terminal on the server. This will copy the required Nginx rules to the location you specified.
+    ```bash
+    ./apply-nginx-config.sh
+    ```
+
+3.  **Reload Nginx:**
+    Log in to your DirectAdmin control panel and find the option to restart or reload Nginx to apply the new configuration.
+
+### 5. Upload Project Files
+
+Upload the application directories to their corresponding `public_html` (or equivalent) web root directories on your server.
+
+#### Example Directory Structure on Server:
 ```
 /home/ibbsbbry/domains/
 ├── arcreformas.com.br/
-│   ├── public_html/
+│   ├── public_html/  <-- Upload arcreformas.com.br contents here
 │   └── storage_arcreformas/
 ├── cut.ia.br/
-│   └── public_html/
+│   └── public_html/  <-- Upload cut.ia.br contents here
 └── memor.ia.br/
-    └── public_html/
+    └── public_html/  <-- Upload memor.ia.br contents here
 ```
 
-#### Upload Command Examples:
+#### Example Upload Command (using rsync):
 ```bash
 # Using rsync (upload each domain separately to correct locations)
 rsync -avz --exclude='.git' ./arcreformas.com.br/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
 rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/home/ibbsbbry/domains/cut.ia.br/public_html/
 rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/home/ibbsbbry/domains/memor.ia.br/public_html/
 rsync -avz --exclude='.git' ./src/ username@server:/home/ibbsbbry/domains/src/
-
-# Upload Jekyll static site to main domain (if using Jekyll for coolice.com)
-rsync -avz --exclude='.git' ./jekyll_static_site/_site/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
-
-# Or via FTP client (FileZilla, WinSCP, etc.) - upload each directory to its corresponding location
-# Note: Verify permissions are preserved during upload
 ```
+**Note:** The `jekyll_static_site` directory is managed and deployed separately and should not be uploaded with this project.
 
-### 5. Set Up Domain Mapping
+### 6. Set Up Domain Mapping
 
-Configure your hosting control panel to map domains:
-- `arcreformas.com.br` → `/home/ibbsbbry/domains/arcreformas.com.br/public_html/`
-- `memor.ia.br` → `/home/ibbsbbry/domains/memor.ia.br/public_html/`
-- `cut.ia.br` → `/home/ibbsbbry/domains/cut.ia.br/public_html/`
+Ensure your domains are mapped to the correct `public_html` directories in your hosting control panel.
 
-### 6. Test Deployment
+### 7. Test Deployment
 
-1. **Test main sites:**
-   - https://coolice.com
-   - https://memor.ia.br
-   - https://cut.ia.br
+1.  **Test main sites:**
+    -   https://memor.ia.br
+    -   https://cut.ia.br
 
-2. **Test API endpoints:**
-   - https://arcreformas.com.br/api/tasks/public
-   - https://arcreformas.com.br/api/files
+2.  **Test API endpoints:**
+    -   `https://arcreformas.com.br/api/tasks/public`
+    -   `https://arcreformas.com.br/api/files`
+    These should now work correctly without a `.htaccess` file.
 
-3. **Test file upload functionality:**
-   - Verify storage directory is writable by web server
-   - Test file upload through the interface
+3.  **Test file upload functionality.**
 
-### 7. Security Verification
+### 8. Security Verification
 
-After deployment, verify security settings:
+After deployment, run these checks from your server's terminal to verify security settings:
 
 ```bash
-# Check no world-writable files exist
+# Check that no files are world-writable
 find /home/ibbsbbry/domains/ -type f -perm -002
 
-# Verify .htaccess files are in place
-find /home/ibbsbbry/domains/ -name ".htaccess" -ls
+# Verify that the Nginx configuration was copied (use the path from the script)
+ls -la /path/to/your/directadmin/custom/nginx/path/arcreformas.com.br.conf
 
 # Check storage directory isolation
 ls -la /home/ibbsbbry/domains/arcreformas.com.br/storage_arcreformas/
@@ -149,74 +151,28 @@ ls -la /home/ibbsbbry/domains/arcreformas.com.br/storage_arcreformas/
 
 ### Updating Code
 
-1. **Pull latest changes locally:**
-   ```bash
-   git pull origin main
-   ./set-permissions.sh
-   ```
+The process remains the same. Pull changes locally, run `./set-permissions.sh`, and `rsync` the updated files to the server.
 
-2. **Upload changed files:**
-   ```bash
-   rsync -avz --exclude='.git' ./arcreformas.com.br/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
-   rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/home/ibbsbbry/domains/cut.ia.br/public_html/
-   rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/home/ibbsbbry/domains/memor.ia.br/public_html/
-   ```
+### Common Issues & Solutions
 
-### Backup Strategy
-
-- **Database:** Regular MySQL dumps
-- **Files:** Backup storage_arcreformas/ directory  
-- **Code:** Git repository serves as code backup
-
-### Monitoring
-
-- Monitor error logs in hosting control panel
-- Set up uptime monitoring for all domains
-- Check storage usage for file uploads
-
-## Common Issues & Solutions
-
-### Permission Problems
-```bash
-# Re-run permission script
-./set-permissions.sh
-
-# Check web server error logs
-tail -f /path/to/error.log
-```
-
-### Database Connection Issues
-- Verify database credentials in config.php
-- Check if hosting provider has specific connection requirements
-- Test database connection independently
-
-### File Upload Issues  
-- Verify storage directory exists and is writable
-- Check PHP upload limits in hosting control panel
-- Review server error logs for permission errors
+-   **Permission Problems:** Re-run `./set-permissions.sh`.
+-   **502/504 Gateway Errors:** This often points to an issue with PHP-FPM or the Nginx configuration. Check your server's Nginx error logs.
+-   **404 Not Found on API endpoints:** This means the custom Nginx rules are not being applied correctly. Double-check the path in `apply-nginx-config.sh` and ensure you reloaded Nginx.
 
 ## Security Best Practices
 
 ✅ **Implemented:**
-- Secure file permissions (644/755)
-- No world-writable files
-- Input validation and prepared statements
-- CORS origin restrictions
+- Secure file permissions (644/755).
+- Standalone Nginx architecture (no .htaccess vulnerabilities).
+- Input validation and prepared statements.
+- CORS origin restrictions.
 
 ⚠️ **Additional Recommendations:**
-- Enable HTTPS for all domains
-- Use environment variables for sensitive data
-- Implement rate limiting on API endpoints
-- Regular security updates and monitoring
-
-## Support
-
-For issues specific to this deployment:
-1. Check hosting provider documentation
-2. Review server error logs
-3. Verify all configuration files are properly set
-4. Test in staging environment first
+- Enable HTTPS for all domains.
+- Use environment variables for sensitive data.
+- Implement rate limiting on API endpoints.
+- Regular security updates and monitoring.
 
 ---
 
-**✅ This deployment guide ensures your coolice project is securely configured for shared hosting environments while maintaining full functionality.**
+**✅ This deployment guide ensures your project is securely configured for a standalone Nginx hosting environment.**
