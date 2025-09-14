@@ -108,7 +108,7 @@ Upload the application directories to their corresponding `public_html` (or equi
 #### Example Upload Command (using rsync):
 ```bash
 # Using rsync (upload each domain separately to correct locations)
-rsync -avz --exclude='.git' ./arcreformas.com.br/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
+rsync -avz --exclude='.git' --exclude='storage_arcreformas/' ./arcreformas.com.br/ username@server:/home/ibbsbbry/domains/arcreformas.com.br/public_html/
 rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/home/ibbsbbry/domains/cut.ia.br/public_html/
 rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/home/ibbsbbry/domains/memor.ia.br/public_html/
 rsync -avz --exclude='.git' ./src/ username@server:/home/ibbsbbry/domains/src/
