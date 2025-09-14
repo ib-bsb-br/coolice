@@ -17,6 +17,7 @@ if [[ "$DESTINATION_PATH" == "/replace/with/your/directadmin/custom/nginx/path/a
   echo -e "\033[0;31mERROR: Please edit this script and set the correct DESTINATION_PATH before running.\033[0m"
   exit 1
 elif [[ ! -f "$SOURCE_CONFIG" ]]; then
+
   echo -e "\033[0;31mERROR: Source configuration file '$SOURCE_CONFIG' not found.\033[0m"
   exit 1
 fi
