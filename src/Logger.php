@@ -19,7 +19,7 @@ class Log {
      */
     public static function event(string $level, string $message, array $context = []): void {
         $logRecord = [
-            'timestamp' => gmdate('Y-m-d\TH:i:s.v\Z'),
+            'timestamp' => gmdate('Y-m-d\TH:i:s') . '.' . sprintf('%03d', (int)((microtime(true) * 1000) % 1000)) . 'Z',
             'level' => strtoupper($level),
             'service' => self::$serviceName,
             'env' => self::$environment,
