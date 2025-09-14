@@ -45,7 +45,17 @@ function get_pdo(): PDO {
 
 function emit_json(mixed $data, int $statusCode = 200): void {
     global $request_start_time;
-    $duration_ms = (microtime(true) - ($request_start_time ?? microtime(true))) * 1000;
+    if (isset($request_start_time)) {
+        $duration_ms = (microtime(true) - $request_start_time) * 1000;
+    } else {
+        $duration_ms = -1; // Sentinel value for missing start time
+        if (class_exists('Log')) {
+            Log::event('warning', 'request_start_time_missing', [
+                'status_code' => $statusCode,
+                'message' => 'request_start_time was not set; duration_ms is unavailable',
+            ]);
+        }
+    }
 
     // The logger may not be loaded if there was a very early exit (e.g. in config)
     if (class_exists('Log')) {
