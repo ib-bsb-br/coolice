@@ -69,15 +69,9 @@ set_perms_recursive "src" 755 644 "Shared PHP utilities"
 # 4. Jekyll static site
 set_perms_recursive "jekyll_static_site" 755 644 "Jekyll static site generator"
 
-# 5. Ensure .htaccess files are readable by web server
+# 5. Create storage directory structure with proper permissions
 echo ""
-echo "3. Setting .htaccess file permissions..."
-find . -name ".htaccess" -exec chmod 644 {} \;
-echo "✓ Set 644 on all .htaccess files"
-
-# 6. Create storage directory structure with proper permissions
-echo ""
-echo "4. Setting up storage directories..."
+echo "3. Setting up storage directories..."
 
 # Create storage directory for arcreformas if it doesn't exist
 STORAGE_DIR="arcreformas.com.br/storage_arcreformas"
@@ -89,13 +83,14 @@ fi
 # Set storage directory permissions (755 for directory, 644 for files)
 set_perms_recursive "$STORAGE_DIR" 755 644 "File upload storage"
 
-# 7. Set script permissions
+# 6. Set script permissions
 echo ""
-echo "5. Setting script permissions..."
+echo "4. Setting script permissions..."
 set_perms "set-permissions.sh" 755 "Permission setup script"
 set_perms "validate-deployment.sh" 755 "Deployment validation script"
+set_perms "apply-nginx-config.sh" 755 "Nginx deployment script"
 
-# 8. Database schema file
+# 7. Database schema file
 set_perms "db_schema.sql" 644 "Database schema file"
 
 echo ""
@@ -103,7 +98,7 @@ echo "=== SECURITY VERIFICATION ==="
 echo ""
 
 # Verify no world-writable files exist (security risk on shared hosting)
-echo "6. Checking for world-writable files (security risk)..."
+echo "5. Checking for world-writable files (security risk)..."
 WORLD_WRITABLE=$(find . -type f -perm -002 -not -path './.git*' 2>/dev/null || true)
 if [[ -n "$WORLD_WRITABLE" ]]; then
     echo "⚠ WARNING: Found world-writable files:"
@@ -115,7 +110,7 @@ fi
 
 # Verify no world-writable directories exist (except git)
 echo ""
-echo "7. Checking for world-writable directories..."
+echo "6. Checking for world-writable directories..."
 WORLD_WRITABLE_DIRS=$(find . -type d -perm -002 -not -path './.git*' 2>/dev/null || true)
 if [[ -n "$WORLD_WRITABLE_DIRS" ]]; then
     echo "⚠ WARNING: Found world-writable directories:"
