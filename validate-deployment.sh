@@ -72,10 +72,6 @@ check "PHP files are 644" \
       "[[ \$(find . -name '*.php' -not -path './.git*' -perm 644 2>/dev/null | wc -l) -eq \$(find . -name '*.php' -not -path './.git*' 2>/dev/null | wc -l) ]]" \
       "PHP files are readable but not world-writable"
 
-check ".htaccess files are 644" \
-      "[[ \$(find . -name '.htaccess' -perm 644 2>/dev/null | wc -l) -eq \$(find . -name '.htaccess' 2>/dev/null | wc -l) ]]" \
-      "Web server configuration files have correct permissions"
-
 check "No world-writable files" \
       "[[ -z \$(find . -type f -perm -002 -not -path './.git*' 2>/dev/null) ]]" \
       "No security risk from world-writable files"
@@ -108,9 +104,13 @@ check "API configuration exists" \
       "[[ -f 'arcreformas.com.br/api/config.php' ]]" \
       "Backend API configuration file present"
 
-check ".htaccess rewrite rules exist" \
-      "[[ -f 'arcreformas.com.br/.htaccess' ]]" \
-      "URL rewriting configuration present"
+check "Nginx configuration file exists" \
+      "[[ -f 'arcreformas.com.br.nginx.conf' ]]" \
+      "Custom Nginx rules for standalone server are present"
+
+check "Nginx deployment script exists and is executable" \
+      "[[ -f 'apply-nginx-config.sh' && -x 'apply-nginx-config.sh' ]]" \
+      "Script to apply Nginx configuration is ready"
 
 # Check for placeholder values in config
 if [[ -f 'arcreformas.com.br/api/config.php' ]]; then
