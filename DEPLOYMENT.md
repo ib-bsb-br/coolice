@@ -72,7 +72,7 @@ define('DB_USER', 'your_db_user');       // Your database username
 define('DB_PASS', 'your_db_password');   // Your database password
 
 // File storage (points to shared storage directory)
-define('UPLOAD_DIR', '/public_html/shared/storage_arcreformas/');
+define('UPLOAD_DIR', __DIR__ . '/../shared/storage_arcreformas/');
 define('FILE_PUBLIC_URL', 'https://arcreformas.com.br/files/');
 
 // CORS origins (restrict in production)
