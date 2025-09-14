@@ -56,7 +56,7 @@ warn() {
 }
 
 # Base directory
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BASE_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$BASE_DIR"
 
 echo "Working directory: $BASE_DIR"
