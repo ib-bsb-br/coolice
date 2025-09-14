@@ -1,4 +1,5 @@
 #!/bin/bash
+umask 0022
 
 # File Permissions Setup for Shared Hosting Deployment
 # This script sets appropriate permissions for the coolice project
@@ -54,7 +55,10 @@ find . -type d -not -path './.git*' -exec chmod 755 {} \;
 
 # 2. Set secure defaults for all files (644) 
 echo "2. Setting file permissions to 644..."
-find . -type f -not -path './.git*' -exec chmod 644 {} \;
+# Using a loop as a workaround for environments where find -exec might fail silently
+for f in $(find . -type f -not -path './.git*'); do
+    chmod 644 "$f"
+done
 
 echo ""
 echo "=== SPECIFIC COMPONENT PERMISSIONS ==="
