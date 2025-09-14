@@ -96,7 +96,7 @@ public_html/
 #### Upload Command Examples:
 ```bash
 # Using rsync (upload each domain separately to correct locations)
-rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/public_html/memor.ia.br/
+rsync -avz --exclude='.git' coolice.com/ memor.ia.br/ arcreformas.com.br/ cut.ia.br/ shared/ username@server:/public_html/
 rsync -avz --exclude='.git' ./arcreformas/ username@server:/public_html/arcreformas.com.br/
 rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/public_html/cut.ia.br/
 rsync -avz --exclude='.git' ./src/ username@server:/public_html/shared/src/
