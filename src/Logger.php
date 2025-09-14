@@ -36,7 +36,9 @@ class Log {
         $logLine = json_encode($logRecord, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
         $bytesWritten = fwrite(STDOUT, $logLine);
         if ($bytesWritten === false || $bytesWritten < strlen($logLine)) {
-            error_log('Failed to write log to STDOUT: ' . $logLine);
+            // Avoid logging the full log line to prevent leaking sensitive data
+            $truncatedMsg = mb_substr($message, 0, 100) . (mb_strlen($message) > 100 ? '...' : '');
+            error_log('Failed to write log to STDOUT. Level: ' . strtoupper($level) . ', Message: ' . $truncatedMsg);
         }
     }
 }
