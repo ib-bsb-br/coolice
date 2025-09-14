@@ -92,6 +92,8 @@ const chips = document.querySelectorAll('.chip');
 const boardsDL = $('#boards');
 
 // --- STATE ---
+let boardETag = null;
+let boardLastMod = null;
 let isSyncing = false;
 let boardData = {title:'My Todo', tasks:[], created:Date.now()/1000|0, updated:Date.now()/1000|0};
 let filter = localStorage.getItem('memor_filter') || 'all';
@@ -123,22 +125,29 @@ function setupUI() {
   const boardURL = `${origin}/?b=${encodeURIComponent(bid)}`;
   shareUrl.value = boardURL;
 
-  chips.forEach(ch => {
-    const isActive = ch.getAttribute('data-filter') === filter;
-    ch.classList.toggle('active', isActive);
-    ch.setAttribute('aria-selected', isActive ? 'true' : 'false');
-  });
-  $('#search').value = searchQuery;
+  updateFilterUI();
 }
 
-// --- CORE LOGIC ---
+// --- CORE LOGIC & API COMMUNICATION ---
 async function fetchBoard(force = false) {
   const url = `${API_BASE_URL}/tasks/${encodeURIComponent(bid)}`;
+  const headers = {};
+  if (boardETag && !force) headers['If-None-Match'] = boardETag;
+  if (boardLastMod && !force) headers['If-Modified-Since'] = boardLastMod;
+
   try {
-    const r = await fetch(url, { cache: force ? 'reload' : 'default' });
+    const r = await fetch(url, { headers, cache: force ? 'reload' : 'default' });
+    if (r.status === 304) {
+      flash('Up to date', 800);
+      return;
+    }
     if (!r.ok) throw new Error('Network error');
     const d = await r.json();
     if (d.error) throw new Error(d.error);
+    
+    boardETag = r.headers.get('ETag');
+    boardLastMod = r.headers.get('Last-Modified');
+    
     render(d);
     pushRecentBoard(bid);
     flash('Loaded', 800);
@@ -296,6 +305,15 @@ function renderBoardsList() {
   } catch (e) {}
 }
 
+function updateFilterUI() {
+  chips.forEach(ch => {
+    const isActive = ch.getAttribute('data-filter') === filter;
+    ch.classList.toggle('active', isActive);
+    ch.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+  $('#search').value = searchQuery;
+}
+
 // --- EVENT LISTENERS ---
 function attachEventListeners() {
   $('#copy').onclick = () => navigator.clipboard.writeText(shareUrl.value).then(() => flash('Copied!', 1000), () => flash('Copy failed', 1500));
@@ -312,9 +330,8 @@ function attachEventListeners() {
   title.onkeydown = e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { title.value = titleOrig; e.target.blur(); }};
   $('#saveTitle').onclick = () => title.blur();
 
-  // Undo support for clear_done and delete
   function showUndo(action) {
-    lastAction = action; // {type, payload}
+    lastAction = action;
     undoBtn.style.display = 'inline-block';
     clearTimeout(undoTimer);
     undoTimer = setTimeout(() => { hideUndo(); }, 10000);
@@ -328,8 +345,7 @@ function attachEventListeners() {
     const act = lastAction;
     hideUndo();
     if (act.type === 'del') {
-      const t = act.payload;
-      await op({op:'add', text: t.text});
+      await op({op:'add', text: act.payload.text});
       flash('Undid delete', 1000);
     } else if (act.type === 'clear_done') {
       for (const t of act.payload) {
@@ -362,8 +378,7 @@ function attachEventListeners() {
   chips.forEach(ch => ch.onclick = () => {
     filter = ch.dataset.filter;
     localStorage.setItem('memor_filter', filter);
-    document.querySelector('.chip.active').classList.remove('active');
-    ch.classList.add('active');
+    updateFilterUI();
     render(boardData);
   });
 
@@ -371,7 +386,7 @@ function attachEventListeners() {
     searchQuery = e.target.value.trim();
     localStorage.setItem('memor_search', searchQuery);
     render(boardData);
-  });
+  };
 
   list.addEventListener('change', e => {
     const id = e.target.dataset.id;
@@ -387,27 +402,27 @@ function attachEventListeners() {
     const pubId = e.target.dataset.pub;
     if (pubId) op({op:'publish', id: pubId}).then(()=>flash('Published!'));
   });
-
+  
   let dragSrcEl = null;
   list.addEventListener('dragstart', e => {
-    if (!e.target.matches('li')) return;
-    dragSrcEl = e.target;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/html', e.target.dataset.id);
+    if (e.target.matches('li')) { dragSrcEl = e.target; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/html', e.target.dataset.id); }
   });
-  list.addEventListener('dragover', e => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const target = e.target.closest('li');
-    if (target && target !== dragSrcEl) {
-      list.insertBefore(dragSrcEl, target.nextSibling || target);
-    }
-  });
+  list.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
   list.addEventListener('drop', e => {
     e.preventDefault();
-    if (!dragSrcEl) return;
-    const order = Array.from(list.querySelectorAll('li')).map(node => node.dataset.id);
-    op({op:'reorder', order});
+    const dropTarget = e.target.closest('li');
+    if (dragSrcEl && dropTarget && dragSrcEl !== dropTarget) {
+      const allItems = [...list.querySelectorAll('li')];
+      const fromIndex = allItems.indexOf(dragSrcEl);
+      const toIndex = allItems.indexOf(dropTarget);
+      if (fromIndex < toIndex) {
+        list.insertBefore(dragSrcEl, dropTarget.nextSibling);
+      } else {
+        list.insertBefore(dragSrcEl, dropTarget);
+      }
+      const order = Array.from(list.querySelectorAll('li')).map(node => node.dataset.id);
+      op({op:'reorder', order});
+    }
   });
 
   list.addEventListener('blur', e => {
@@ -420,45 +435,44 @@ function attachEventListeners() {
       }
     }
   }, true);
+  
+  list.addEventListener('keydown', (e) => {
+    const li = e.target.closest('li');
+    if (!li) return;
+    if (e.target === li) {
+      if (e.key === ' ') { e.preventDefault(); li.querySelector('input[type=checkbox]').click(); }
+      if (e.key === 'Delete') { e.preventDefault(); li.querySelector('[data-del]').click(); }
+      if (e.key.toLowerCase() === 'e') { e.preventDefault(); li.querySelector('.txt').focus(); }
+    }
+    if (e.target.classList.contains('txt')) {
+        if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+        if (e.key === 'Escape') { e.preventDefault(); e.target.textContent = boardData.tasks.find(t => t.id === li.dataset.id)?.text || ''; e.target.blur(); }
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === '/') { e.preventDefault(); input.focus(); }
+  });
 }
 
-// Optimistic update
+// Optimistic Updates
 function applyOperationOptimistically(data, payload) {
     let newData = JSON.parse(JSON.stringify(data));
     const { op, id, text, done, order } = payload;
-
     switch (op) {
-        case 'add':
-            newData.tasks.push({ id: `temp-${Date.now()}`, text, done: false, ts: Date.now()/1000 });
-            break;
-        case 'toggle':
-            newData.tasks.forEach(t => { if (t.id === id) t.done = !t.done; });
-            break;
-        case 'edit':
-            newData.tasks.forEach(t => { if (t.id === id) t.text = text; });
-            break;
-        case 'del':
-            newData.tasks = newData.tasks.filter(t => t.id !== id);
-            break;
-        case 'title':
-            newData.title = payload.title;
-            break;
-        case 'clear_done':
-            newData.tasks = newData.tasks.filter(t => !t.done);
-            break;
-        case 'set_all':
-            newData.tasks.forEach(t => t.done = done);
-            break;
-        case 'clear_all':
-            newData.tasks = [];
-            break;
+        case 'add': newData.tasks.push({ id: `temp-${Date.now()}`, text, done: false, ts: Date.now()/1000 }); break;
+        case 'toggle': newData.tasks.forEach(t => { if (t.id === id) t.done = !t.done; }); break;
+        case 'edit': newData.tasks.forEach(t => { if (t.id === id) t.text = text; }); break;
+        case 'del': newData.tasks = newData.tasks.filter(t => t.id !== id); break;
+        case 'title': newData.title = payload.title; break;
+        case 'clear_done': newData.tasks = newData.tasks.filter(t => !t.done); break;
+        case 'set_all': newData.tasks.forEach(t => t.done = done); break;
+        case 'clear_all': newData.tasks = []; break;
         case 'reorder':
             const taskMap = new Map(newData.tasks.map(t => [t.id, t]));
             newData.tasks = order.map(orderedId => taskMap.get(orderedId)).filter(Boolean);
             break;
-        case 'publish':
-            newData.tasks.forEach(t => { if (t.id === id) t.is_published = 1; });
-            break;
+        case 'publish': newData.tasks.forEach(t => { if (t.id === id) t.is_published = 1; }); break;
     }
     newData.updated = Date.now() / 1000;
     return newData;
