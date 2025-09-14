@@ -71,8 +71,8 @@ define('DB_NAME', 'your_db_name');       // e.g., coolice_main
 define('DB_USER', 'your_db_user');       // Your database username
 define('DB_PASS', 'your_db_password');   // Your database password
 
-// File storage (relative to project root)
-define('UPLOAD_DIR', __DIR__ . '/../../storage_arcreformas/');
+// File storage (points to shared storage directory)
+define('UPLOAD_DIR', '/public_html/shared/storage_arcreformas/');
 define('FILE_PUBLIC_URL', 'https://arcreformas.com.br/files/');
 
 // CORS origins (restrict in production)
@@ -93,12 +93,18 @@ public_html/
     └── storage_arcreformas/ # File uploads
 ```
 
-#### Upload Command Example:
+#### Upload Command Examples:
 ```bash
-# Using rsync (preserves permissions)
-rsync -avz --exclude='.git' ./ username@server:/public_html/
+# Using rsync (upload each domain separately to correct locations)
+rsync -avz --exclude='.git' ./memor.ia.br/ username@server:/public_html/memor.ia.br/
+rsync -avz --exclude='.git' ./arcreformas/ username@server:/public_html/arcreformas.com.br/
+rsync -avz --exclude='.git' ./cut.ia.br/ username@server:/public_html/cut.ia.br/
+rsync -avz --exclude='.git' ./src/ username@server:/public_html/shared/src/
 
-# Or via FTP client (FileZilla, WinSCP, etc.)
+# Create and upload storage directory
+rsync -avz --exclude='.git' ./storage_arcreformas/ username@server:/public_html/shared/storage_arcreformas/
+
+# Or via FTP client (FileZilla, WinSCP, etc.) - upload each directory to its corresponding location
 # Note: Verify permissions are preserved during upload
 ```
 
