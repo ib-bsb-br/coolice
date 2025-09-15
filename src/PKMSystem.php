@@ -20,9 +20,17 @@ class PKMSystem {
     }
 
     public static function sanitizeFilename(string $filename): string {
-        $filename = preg_replace('/[^\w\s\-\.]/', '_', $filename);
+        // Remove any directory separators
+        $filename = str_replace(['/', '\\'], '_', $filename);
+        // Replace any character that is not a word character, whitespace, or dash with underscore (dots not allowed)
+        $filename = preg_replace('/[^\w\s\-]/', '_', $filename);
+        // Replace whitespace with underscores
         $filename = preg_replace('/\s+/', '_', $filename);
-        $filename = trim($filename, '.-_');
+        // Remove leading/trailing dots, dashes, and underscores
+        $filename = trim($filename, '-_');
+        // Prevent leading dots (hidden files)
+        $filename = ltrim($filename, '.');
+        // If filename is empty, use a default
         return $filename ?: 'unnamed_file';
     }
 
