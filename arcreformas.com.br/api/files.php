@@ -2,6 +2,10 @@
 declare(strict_types=1);
 // Note: config.php and PKMSystem.php are loaded by index.php
 
+// Ensure CUT_WEBHOOK_URL is defined to avoid PHP notices
+if (!defined('CUT_WEBHOOK_URL')) {
+    define('CUT_WEBHOOK_URL', '');
+}
 function notify_cut_engine(string $fileUrl, string $filename, string $type, int $size): void
 {
     if (!defined('CUT_WEBHOOK_URL') || CUT_WEBHOOK_URL === '') {
