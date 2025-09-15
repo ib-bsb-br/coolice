@@ -40,7 +40,7 @@ fi
 
 echo "This script will copy '$SOURCE_CONFIG' to '$CUSTOM_CONFIG_DEST_PATH'."
 read -r -p "Are you sure you want to proceed? (y/n): " confirmation
-if [[ "$confirmation" != "y" ]]; then
+if ! [[ "$confirmation" =~ ^[Yy]$ ]]; then
     echo "Operation cancelled."
     exit 0
 fi
