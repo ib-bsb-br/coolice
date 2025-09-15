@@ -29,8 +29,7 @@ try {
 
         case 'tasks':
             require_once __DIR__ . '/tasks.php';
-            // The new tasks.php doesn't use the second param, but we keep it for consistency
-            handleTasksRequest($resource_id);
+            handle_tasks_request($resource_id);
             break;
 
         case 'links':
