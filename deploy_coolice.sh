@@ -75,8 +75,12 @@ ensure_tool_installed() {
     if ! command -v "$tool_name" >/dev/null 2>&1; then
         echo "Tool '$tool_name' not found. Attempting to install package '$package_name'..."
         # Using sudo for installation. The user will be prompted for their password if not cached.
-        if ! sudo apt-get update -y || ! sudo apt-get install -y "$package_name"; then
-            echo "ERROR: Failed to install '$package_name'. Please install it manually and re-run the script." >&2
+        if ! sudo apt-get update -y; then
+            printf "ERROR: 'apt-get update' failed. Please check your network connection and permissions.\n" >&2
+            exit 1
+        fi
+        if ! sudo apt-get install -y "$package_name"; then
+            printf "ERROR: Failed to install package '%s'. Please install it manually and re-run the script.\n" "$package_name" >&2
             exit 1
         fi
         echo "Package '$package_name' installed successfully."
