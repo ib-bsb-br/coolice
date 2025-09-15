@@ -47,7 +47,8 @@ foreach ([UPLOAD_DIR, TEMP_DIR, DATA_DIR] as $dir) {
         // Check if mkdir fails and the directory doesn't exist.
         if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
             // Log error if directory creation fails.
-            error_log("Failed to create directory: " . $dir);
-        }
+            $lastError = error_get_last();
+            $reason = isset($lastError['message']) ? $lastError['message'] : 'Unknown error';
+            error_log("Failed to create directory: " . $dir . " - Reason: " . $reason);
     }
 }
