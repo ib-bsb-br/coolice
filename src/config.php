@@ -19,6 +19,7 @@ define('WORKSHOP_URL', 'https://memor.ia.br');
 define('ENGINE_URL', 'https://cut.ia.br');
 define('GALLERY_URL', 'https://ib-bsb-br.github.io');
 define('API_INTERNAL_URL', getenv('API_INTERNAL_URL') ?: 'https://arcreformas.com.br/api');
+define('CUT_WEBHOOK_URL', getenv('CUT_WEBHOOK_URL') ?: '');
 
 // API Configuration
 define('API_BASE_URL', '/api');
