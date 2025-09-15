@@ -98,10 +98,16 @@ echo "---"
 echo "Performing pre-flight checks..."
 
 # Check 1: Verify the script is being run by the correct user from the correct directory.
-if [ "$USER" != "$TARGET_USER" ] || [ "$PWD" != "$USER_HOME" ]; then
-    echo "ERROR: This script must be run by the '$TARGET_USER' user from within the '$USER_HOME' directory." >&2
-    echo "You are currently user '$USER' in directory '$PWD'." >&2
-    echo "Please log in as '$TARGET_USER' and run 'cd ~' before executing this script." >&2
+if [ "$USER" != "$TARGET_USER" ]; then
+    echo "ERROR: This script must be run by the '$TARGET_USER' user." >&2
+    echo "You are currently user '$USER'." >&2
+    echo "Please log in as '$TARGET_USER' before executing this script." >&2
+    exit 1
+fi
+if [ "$PWD" != "$USER_HOME" ]; then
+    echo "ERROR: This script must be run from within the '$USER_HOME' directory." >&2
+    echo "You are currently in directory '$PWD'." >&2
+    echo "Please run 'cd ~' before executing this script." >&2
     exit 1
 fi
 echo "✓ Script running as correct user and from the correct directory."
