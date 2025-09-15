@@ -2,7 +2,7 @@
 declare(strict_types=1);
 // Note: config.php and PKMSystem.php are loaded by index.php, so no require is needed here.
 
-function handleTasksRequest(?string $board_slug): void {
+function handle_tasks_request(?string $board_slug): void {
     if (empty($board_slug)) {
         PKMSystem::emitJson(['error' => 'Board slug not specified.'], 400);
         return;
