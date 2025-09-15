@@ -161,6 +161,7 @@ echo "Cloning repository from '$REPO_URL' into a temporary directory..."
 # Create a secure, temporary directory for the clone.
 # The path is stored in TEMP_CLONE_DIR, which will be cleaned up automatically on exit.
 TEMP_CLONE_DIR=$(mktemp -d)
+chmod 700 "$TEMP_CLONE_DIR"
 if ! git clone --depth 1 "$REPO_URL" "$TEMP_CLONE_DIR"; then
     echo "ERROR: Failed to clone repository from '$REPO_URL'." >&2
     # The trap will still fire to clean up the partially created temp directory.
