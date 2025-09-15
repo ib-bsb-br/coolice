@@ -1,42 +1,61 @@
-CREATE DATABASE IF NOT EXISTS your_database_name;
+-- File: /database/schema.sql
+CREATE DATABASE IF NOT EXISTS pkm_system CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE pkm_system;
 
-USE your_database_name;
+-- Boards table
+CREATE TABLE IF NOT EXISTS boards (
+    slug VARCHAR(64) PRIMARY KEY,
+    title VARCHAR(200) NOT NULL DEFAULT 'My Board',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_updated (updated_at)
+) ENGINE=InnoDB;
 
-CREATE TABLE `files` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `filename` varchar(255) NOT NULL,
-  `filesize` int(11) NOT NULL,
-  `mime_type` varchar(128) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- Tasks table with enhanced features
+CREATE TABLE IF NOT EXISTS tasks (
+    id VARCHAR(16) PRIMARY KEY,
+    board_slug VARCHAR(64) NOT NULL,
+    text TEXT NOT NULL,
+    is_done BOOLEAN DEFAULT FALSE,
+    is_published BOOLEAN DEFAULT FALSE,
+    sort_order INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (board_slug) REFERENCES boards(slug) ON DELETE CASCADE,
+    INDEX idx_board (board_slug),
+    INDEX idx_sort (board_slug, sort_order),
+    INDEX idx_published (is_published, updated_at)
+) ENGINE=InnoDB;
 
-CREATE TABLE `links` (
-  `slug` varchar(20) NOT NULL,
-  `url` text NOT NULL,
-  `views` int(11) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`slug`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- Files table
+CREATE TABLE IF NOT EXISTS files (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    filename VARCHAR(255) NOT NULL,
+    original_name VARCHAR(255),
+    filesize BIGINT NOT NULL,
+    mime_type VARCHAR(100),
+    file_path VARCHAR(500),
+    is_published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_created (created_at),
+    INDEX idx_filename (filename)
+) ENGINE=InnoDB;
 
-CREATE TABLE `boards` (
-  `slug` varchar(255) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`slug`)
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- Links table for URL shortener
+CREATE TABLE IF NOT EXISTS links (
+    slug VARCHAR(10) PRIMARY KEY,
+    url TEXT NOT NULL,
+    views INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB;
 
-CREATE TABLE `tasks` (
-  `id` varchar(20) NOT NULL,
-  `board_slug` varchar(255) NOT NULL,
-  `text` text NOT NULL,
-  `is_done` tinyint (1) NOT NULL DEFAULT 0,
-  `sort_order` int(11) DEFAULT 0,
-  `is_published` tinyint (1) NOT NULL DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
-  PRIMARY KEY (`id`),
-  KEY `board_slug` (`board_slug`),
-  CONSTRAINT `tasks_ibfk_1` FOREIGN KEY (`board_slug`) REFERENCES `boards` (`slug`) ON DELETE CASCADE
-) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+-- Events table for audit logging
+CREATE TABLE IF NOT EXISTS events (
+    id VARCHAR(16) PRIMARY KEY,
+    event_type VARCHAR(50) NOT NULL,
+    event_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_type (event_type),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB;
