@@ -87,7 +87,7 @@ class PKMSystem {
         return false;
     }
 
-    public static function emitJson($data, int $statusCode = 200): void {
+    public static function emitJson(mixed $data, int $statusCode = 200): void {
         // Log the end of the request including duration
         $duration_ms = (self::$requestStartTime !== null)
             ? (microtime(true) - self::$requestStartTime) * 1000
