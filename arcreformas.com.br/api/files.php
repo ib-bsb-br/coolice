@@ -69,7 +69,7 @@ function compute_files_etag_and_lastmod(array $files): array
 
 function get_all_files(): void
 {
-    PKMSystem::logEvent('file_list_requested');
+    PKMSystem::logEvent('file_list_requested', []);
     $pdo = PKMSystem::getPDO();
     // The new schema includes original_name, which is useful here.
     $stmt = $pdo->query("SELECT id, filename, original_name, filesize, mime_type, created_at FROM files ORDER BY created_at DESC");
@@ -130,7 +130,7 @@ function create_task_for_file(string $filename, string $file_url): void
 
 function upload_new_file(): void
 {
-    PKMSystem::logEvent('file_upload_started');
+    PKMSystem::logEvent('file_upload_started', []);
 
     if (!isset($_FILES['fileToUpload'])) {
         PKMSystem::logEvent('file_upload_failed', ['reason' => 'No file data in fileToUpload field']);
