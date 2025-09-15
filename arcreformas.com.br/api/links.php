@@ -69,9 +69,9 @@ function create_short_link(): void
     } catch (PDOException $e) {
         // Handle potential slug collision, though unlikely
         if ($e->getCode() == '23000') { // Integrity constraint violation
-             PKMSystem::emitJson(['error' => 'Could not generate a unique short link. Please try again.'], 409);
+            PKMSystem::emitJson(['error' => 'Could not generate a unique short link. Please try again.'], 409);
         } else {
-             PKMSystem::emitJson(['error' => 'Failed to create short link in database.'], 500);
+            PKMSystem::emitJson(['error' => 'Failed to create short link in database.'], 500);
         }
     }
 }
