@@ -29,7 +29,19 @@ define('MAX_TITLE_LENGTH', 200);
 // Security Configuration
 define('GITHUB_TOKEN', getenv('GITHUB_TOKEN') ?: '');
 define('GITHUB_REPO', 'ib-bsb-br/ib-bsb-br.github.io');
-define('WEBHOOK_SECRET', getenv('WEBHOOK_SECRET') ?: bin2hex(random_bytes(16)));
+// WEBHOOK_SECRET: Use env var if set, otherwise persistently store/retrieve from file
+if (getenv('WEBHOOK_SECRET')) {
+    define('WEBHOOK_SECRET', getenv('WEBHOOK_SECRET'));
+} else {
+    $webhookSecretFile = DATA_DIR . 'webhook_secret.txt';
+    if (file_exists($webhookSecretFile)) {
+        $secret = trim(file_get_contents($webhookSecretFile));
+    } else {
+        $secret = bin2hex(random_bytes(16));
+        file_put_contents($webhookSecretFile, $secret);
+    }
+    define('WEBHOOK_SECRET', $secret);
+}
 
 // Event Bus Configuration
 define('EVENT_LOG_FILE', DATA_DIR . 'events.ndjson');
