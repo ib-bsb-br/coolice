@@ -43,8 +43,8 @@ function handle_get_board(PDO $pdo, string $board_slug): void {
             'slug' => $board_slug,
             'title' => 'New Board',
             'tasks' => [],
-            'created' => time(),
-            'updated' => time()
+            'created' => 0,
+            'updated' => 0
         ];
         $etag = md5($defaultBoard['updated'] . $defaultBoard['created'] . $board_slug);
         $lastModified = $defaultBoard['updated'];
