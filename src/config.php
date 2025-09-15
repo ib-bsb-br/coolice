@@ -9,9 +9,9 @@ define('DB_PASS', getenv('DB_PASS') ?: 'pkm_password');
 
 // Storage Configuration (Hybrid approach)
 // These paths are relative to the project root, assuming `src` is in the root.
-define('UPLOAD_DIR', realpath(__DIR__ . '/../storage') . '/');
-define('TEMP_DIR', realpath(__DIR__ . '/../temp') . '/');
-define('DATA_DIR', realpath(__DIR__ . '/../data') . '/');
+define('UPLOAD_DIR', __DIR__ . '/../storage/');
+define('TEMP_DIR', __DIR__ . '/../temp/');
+define('DATA_DIR', __DIR__ . '/../data/');
 
 // Service URLs
 define('INBOX_URL', 'https://arcreformas.com.br');
