@@ -69,7 +69,7 @@ check "Directory permissions are 755" \
       "All application directories have proper read/execute permissions"
 
 check "PHP files are 644" \
-      "all_ok=true; for f in \$(find . -name '*.php' -not -path './.git*'); do if [[ \$(stat -c \"%a\" \"\$f\") != \"644\" ]]; then all_ok=false; break; fi; done; \$all_ok" \
+      "all_ok=true; for f in \$(find . -name '*.php' -not -path './.git*'); do if [[ \$(stat -c \"%a\" \"\$f\") != \"644\" ]]; then all_ok=false; break; fi; done; $all_ok" \
       "PHP files are readable but not world-writable (checked with stat)"
 
 check "No world-writable files" \
