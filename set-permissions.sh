@@ -56,9 +56,7 @@ find . -type d -not -path './.git*' -exec chmod 755 {} \;
 # 2. Set secure defaults for all files (644) 
 echo "2. Setting file permissions to 644..."
 # Using a loop as a workaround for environments where find -exec might fail silently
-for f in $(find . -type f -not -path './.git*'); do
-    chmod 644 "$f"
-done
+find . -type f -not -path './.git*' -exec chmod 644 {} \;
 
 echo ""
 echo "=== SPECIFIC COMPONENT PERMISSIONS ==="
