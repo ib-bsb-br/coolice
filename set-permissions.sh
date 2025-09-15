@@ -71,19 +71,24 @@ set_perms_recursive "src" 755 644 "Shared PHP utilities"
 # 4. Jekyll static site
 set_perms_recursive "jekyll_static_site" 755 644 "Jekyll static site generator"
 
-# 5. Create storage directory structure with proper permissions
+# 5. Create new storage directory structure with proper permissions
 echo ""
 echo "3. Setting up storage directories..."
 
-# Create storage directory for arcreformas if it doesn't exist
-STORAGE_DIR="arcreformas.com.br/storage_arcreformas"
-if [[ ! -d "$STORAGE_DIR" ]]; then
-    mkdir -p "$STORAGE_DIR"
-    echo "✓ Created $STORAGE_DIR directory"
-fi
+# Define new top-level storage directories required by the application
+declare -a NEW_STORAGE_DIRS=("storage" "temp" "data")
 
-# Set storage directory permissions (755 for directory, 644 for files)
-set_perms_recursive "$STORAGE_DIR" 755 644 "File upload storage"
+for dir in "${NEW_STORAGE_DIRS[@]}"; do
+    if [[ ! -d "$dir" ]]; then
+        mkdir -p "$dir"
+        echo "✓ Created $dir/ directory"
+    fi
+    # Set permissions to 775 for these directories.
+    # This allows the web server (if running as part of the same group)
+    # to write to these directories, which is necessary for uploads, logging, etc.
+    # This is a safe choice that is more functional than 755 but avoids 777.
+    set_perms "$dir" 775 "Set web-writable permissions (775) on $dir directory"
+done
 
 # 6. Set script permissions
 echo ""
