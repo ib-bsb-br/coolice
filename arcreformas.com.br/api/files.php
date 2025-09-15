@@ -109,23 +109,14 @@ function create_task_for_file(string $filename, string $file_url): void
 
     PKMSystem::logEvent('dependency_call_started', ['system' => 'self:tasks_api', 'url' => $tasks_api_url]);
 
-    // Using a simple cURL for the internal call.
-    $ch = curl_init($tasks_api_url);
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($taskPayload),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_TIMEOUT => 2
-    ]);
-    $response = curl_exec($ch);
-    if ($response === false) {
-        PKMSystem::logEvent('dependency_call_failed', ['system' => 'self:tasks_api', 'error' => curl_error($ch)]);
-        error_log("Tasks API create task failed: " . curl_error($ch));
+    $result = PKMSystem::sendJsonPostRequest($tasks_api_url, $taskPayload, [], 2); // Timeout 2s as in original
+
+    if (!$result['success']) {
+        PKMSystem::logEvent('dependency_call_failed', ['system' => 'self:tasks_api', 'error' => $result['error'] ?: 'Unknown error']);
+        error_log("Tasks API create task failed: " . ($result['error'] ?: 'Unknown error'));
     } else {
         PKMSystem::logEvent('dependency_call_success', ['system' => 'self:tasks_api']);
     }
-    curl_close($ch);
 }
 
 function upload_new_file(): void
