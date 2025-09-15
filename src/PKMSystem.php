@@ -78,7 +78,7 @@ class PKMSystem {
         return false;
     }
 
-    public static function emitJson($data, int $statusCode = 200): void {
+    public static function emitJson(mixed $data, int $statusCode = 200): void {
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
         header('Access-Control-Allow-Origin: *');
