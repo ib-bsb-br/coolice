@@ -18,6 +18,7 @@ define('INBOX_URL', 'https://arcreformas.com.br');
 define('WORKSHOP_URL', 'https://memor.ia.br');
 define('ENGINE_URL', 'https://cut.ia.br');
 define('GALLERY_URL', 'https://ib-bsb-br.github.io');
+define('API_INTERNAL_URL', getenv('API_INTERNAL_URL') ?: 'https://arcreformas.com.br/api');
 
 // API Configuration
 define('API_BASE_URL', '/api');
