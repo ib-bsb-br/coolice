@@ -39,18 +39,22 @@ function handle_get_board(PDO $pdo, string $board_slug): void {
     $board = $stmt->fetch();
 
     if (!$board) {
-        $defaultBoard = [
-            'slug' => $board_slug,
-            'title' => 'New Board',
-            'tasks' => [],
-            'created' => time(),
-            'updated' => time()
-        ];
-        $currentTime = time();
-        $etag = md5($defaultBoard['updated'] . $defaultBoard['created'] . $board_slug);
-        $lastModified = $currentTime;
-        PKMSystem::setCacheHeaders($etag, $lastModified);
-        PKMSystem::emitJson($defaultBoard);
+        // If board does not exist, create it in the database
+        $insertStmt = $pdo->prepare("INSERT INTO boards (slug, title) VALUES (?, ?)");
+        $insertStmt->execute([$board_slug, 'New Board']);
+
+        // Re-fetch the board to get its full state, including DB-generated timestamps
+        // and task-related counts/timestamps for ETag generation.
+        $stmt->execute([$board_slug]);
+        $board = $stmt->fetch();
+
+        if (!$board) {
+            // This case should ideally not happen if the insert was successful.
+            // Log an error and return a server error.
+            PKMSystem::logEvent('board_creation_failed', ['board_slug' => $board_slug, 'reason' => 'Board not found after insert']);
+            PKMSystem::emitJson(['error' => 'Failed to create and retrieve default board.'], 500);
+            return;
+        }
         return;
     }
 
