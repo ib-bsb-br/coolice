@@ -17,17 +17,17 @@ function handle_tasks_request(?string $board_slug): void {
 
     switch ($method) {
         case 'GET':
-            handleGetBoard($pdo, $board_slug);
+            handle_get_board($pdo, $board_slug);
             break;
         case 'POST':
-            handleTaskOperation($pdo, $board_slug);
+            handle_task_operation($pdo, $board_slug);
             break;
         default:
             PKMSystem::emitJson(['error' => 'Method not allowed'], 405);
     }
 }
 
-function handleGetBoard(PDO $pdo, string $board_slug): void {
+function handle_get_board(PDO $pdo, string $board_slug): void {
     $stmt = $pdo->prepare("
         SELECT b.*,
                (SELECT COUNT(*) FROM tasks WHERE board_slug = b.slug) as task_count,
@@ -88,7 +88,7 @@ function handleGetBoard(PDO $pdo, string $board_slug): void {
     PKMSystem::emitJson($board);
 }
 
-function handleTaskOperation(PDO $pdo, string $board_slug): void {
+function handle_task_operation(PDO $pdo, string $board_slug): void {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $op = $input['op'] ?? '';
 
@@ -102,17 +102,11 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
                 $text = trim((string)($input['text'] ?? ''));
                 if ($text !== '' && strlen($text) <= MAX_TEXT_LENGTH) {
                     $id = PKMSystem::generateId();
-                    // Get the current max sort_order for this board
-                    $stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) FROM tasks WHERE board_slug = ?");
-                    $stmt->execute([$board_slug]);
-                    $max_sort_order = (int)$stmt->fetchColumn();
-                    $sort_order = $max_sort_order + 1;
-
                     $stmt = $pdo->prepare("
                         INSERT INTO tasks (id, board_slug, text, sort_order)
-                        VALUES (?, ?, ?, ?)
+                        VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks t WHERE t.board_slug = ?))
                     ");
-                    $stmt->execute([$id, $board_slug, $text, $sort_order]);
+                    $stmt->execute([$id, $board_slug, $text, $board_slug]);
                     $result = ['id' => $id];
 
                     PKMSystem::logEvent('task_added', [
@@ -185,7 +179,7 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
 
                 // Trigger GitHub workflow if configured
                 if (!empty(GITHUB_TOKEN)) {
-                    triggerGitHubWorkflow();
+                    trigger_github_workflow();
                 }
 
                 // Send webhook notification
@@ -206,7 +200,7 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
         $pdo->commit();
 
         // Return updated board state
-        handleGetBoard($pdo, $board_slug);
+        handle_get_board($pdo, $board_slug);
 
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -219,7 +213,7 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
     }
 }
 
-function triggerGitHubWorkflow(): void {
+function trigger_github_workflow(): void {
     $ch = curl_init();
     $url = "https://api.github.com/repos/" . GITHUB_REPO . "/actions/workflows/refresh-content.yml/dispatches";
 
