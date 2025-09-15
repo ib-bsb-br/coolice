@@ -17,17 +17,17 @@ function handle_tasks_request(?string $board_slug): void {
 
     switch ($method) {
         case 'GET':
-            handleGetBoard($pdo, $board_slug);
+            handle_get_board($pdo, $board_slug);
             break;
         case 'POST':
-            handleTaskOperation($pdo, $board_slug);
+            handle_task_operation($pdo, $board_slug);
             break;
         default:
             PKMSystem::emitJson(['error' => 'Method not allowed'], 405);
     }
 }
 
-function handleGetBoard(PDO $pdo, string $board_slug): void {
+function handle_get_board(PDO $pdo, string $board_slug): void {
     $stmt = $pdo->prepare("
         SELECT b.*,
                (SELECT COUNT(*) FROM tasks WHERE board_slug = b.slug) as task_count,
@@ -39,7 +39,17 @@ function handleGetBoard(PDO $pdo, string $board_slug): void {
     $board = $stmt->fetch();
 
     if (!$board) {
-        PKMSystem::emitJson(['error' => 'Board not found'], 404);
+        $defaultBoard = [
+            'slug' => $board_slug,
+            'title' => 'New Board',
+            'tasks' => [],
+            'created' => 0,
+            'updated' => 0
+        ];
+        $etag = md5($defaultBoard['updated'] . $defaultBoard['created'] . $board_slug);
+        $lastModified = $defaultBoard['updated'];
+        PKMSystem::setCacheHeaders($etag, $lastModified);
+        PKMSystem::emitJson($defaultBoard);
         return;
     }
 
@@ -77,7 +87,7 @@ function handleGetBoard(PDO $pdo, string $board_slug): void {
     PKMSystem::emitJson($board);
 }
 
-function handleTaskOperation(PDO $pdo, string $board_slug): void {
+function handle_task_operation(PDO $pdo, string $board_slug): void {
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
     $op = $input['op'] ?? '';
 
@@ -91,11 +101,11 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
                 $text = trim((string)($input['text'] ?? ''));
                 if ($text !== '' && strlen($text) <= MAX_TEXT_LENGTH) {
                     $id = PKMSystem::generateId();
-                    // Get the current max sort_order for this board
-                    $stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) AS max_sort FROM tasks WHERE board_slug = ?");
-                    $stmt->execute([$board_slug]);
-                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                    $next_sort_order = (int)$row['max_sort'] + 1;
+
+                    // Get the current max sort_order for this board in a separate query
+                    $sort_stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks WHERE board_slug = ?");
+                    $sort_stmt->execute([$board_slug]);
+                    $next_sort_order = $sort_stmt->fetchColumn();
 
                     $stmt = $pdo->prepare("
                         INSERT INTO tasks (id, board_slug, text, sort_order)
@@ -174,7 +184,7 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
 
                 // Trigger GitHub workflow if configured
                 if (!empty(GITHUB_TOKEN)) {
-                    triggerGitHubWorkflow();
+                    trigger_github_workflow();
                 }
 
                 // Send webhook notification
@@ -195,7 +205,7 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
         $pdo->commit();
 
         // Return updated board state
-        handleGetBoard($pdo, $board_slug);
+        handle_get_board($pdo, $board_slug);
 
     } catch (Exception $e) {
         $pdo->rollBack();
@@ -208,7 +218,7 @@ function handleTaskOperation(PDO $pdo, string $board_slug): void {
     }
 }
 
-function triggerGitHubWorkflow(): void {
+function trigger_github_workflow(): void {
     $ch = curl_init();
     $url = "https://api.github.com/repos/" . GITHUB_REPO . "/actions/workflows/refresh-content.yml/dispatches";
 
@@ -225,6 +235,13 @@ function triggerGitHubWorkflow(): void {
         CURLOPT_TIMEOUT => 5
     ]);
 
-    curl_exec($ch);
+    $response = curl_exec($ch);
+    if ($response === false) {
+        PKMSystem::logEvent('dependency_call_failed', [
+            'system' => 'github_workflow',
+            'error' => curl_error($ch),
+            'url' => $url
+        ]);
+    }
     curl_close($ch);
 }

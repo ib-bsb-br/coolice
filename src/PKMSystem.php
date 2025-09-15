@@ -4,6 +4,23 @@ declare(strict_types=1);
 // Helper Functions
 class PKMSystem {
     private static ?PDO $pdo = null;
+    private static ?string $requestId = null;
+    private static ?float $requestStartTime = null;
+
+    public static function initRequestContext(): void {
+        if (self::$requestStartTime !== null) {
+            return; // Already initialized
+        }
+        self::$requestStartTime = microtime(true);
+        self::$requestId = bin2hex(random_bytes(8));
+
+        self::logEvent('request_started', [
+            'method' => $_SERVER['REQUEST_METHOD'] ?? 'unknown',
+            'uri' => $_SERVER['REQUEST_URI'] ?? 'unknown',
+            'ip' => $_SERVER['REMOTE_ADDR'] ?? 'unknown',
+            'agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'unknown',
+        ]);
+    }
 
     public static function getPDO(): PDO {
         if (self::$pdo === null) {
@@ -20,17 +37,9 @@ class PKMSystem {
     }
 
     public static function sanitizeFilename(string $filename): string {
-        // Remove any directory separators
-        $filename = str_replace(['/', '\\'], '_', $filename);
-        // Replace any character that is not a word character, whitespace, dash, or dot with underscore (dots allowed except at start/end)
-        $filename = preg_replace('/[^\w\s\-.]/', '_', $filename);
-        // Replace whitespace with underscores
+        $filename = preg_replace('/[^\w\s\-\.]/', '_', $filename);
         $filename = preg_replace('/\s+/', '_', $filename);
-        // Remove leading/trailing dots, dashes, and underscores
-        $filename = trim($filename, '-_');
-        // Prevent leading dots (hidden files)
-        $filename = ltrim($filename, '.');
-        // If filename is empty, use a default
+        $filename = trim($filename, '.-_');
         return $filename ?: 'unnamed_file';
     }
 
@@ -78,7 +87,17 @@ class PKMSystem {
         return false;
     }
 
-    public static function emitJson(mixed $data, int $statusCode = 200): void {
+    public static function emitJson($data, int $statusCode = 200): void {
+        // Log the end of the request including duration
+        $duration_ms = (self::$requestStartTime !== null)
+            ? (microtime(true) - self::$requestStartTime) * 1000
+            : -1;
+
+        self::logEvent('request_finished', [
+            'status_code' => $statusCode,
+            'duration_ms' => (int)$duration_ms,
+        ]);
+
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
         header('Access-Control-Allow-Origin: *');
@@ -92,6 +111,7 @@ class PKMSystem {
     public static function logEvent(string $type, array $data): void {
         $event = [
             'id' => self::generateId(),
+            'request_id' => self::$requestId,
             'timestamp' => time(),
             'type' => $type,
             'data' => $data

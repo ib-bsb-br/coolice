@@ -50,3 +50,13 @@ CREATE TABLE IF NOT EXISTS links (
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB;
 
+-- Events table for audit logging
+-- Events table for audit logging (NOTE: Currently, events are logged to a file. This table is for future use.)
+CREATE TABLE IF NOT EXISTS events (
+    id VARCHAR(16) PRIMARY KEY,
+    event_type VARCHAR(50) NOT NULL,
+    event_data JSON,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_type (event_type),
+    INDEX idx_created (created_at)
+) ENGINE=InnoDB;

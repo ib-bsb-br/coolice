@@ -188,6 +188,26 @@ echo
 
 # --- Finalization ---
 echo "---"
+echo
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo "!!! POST-DEPLOYMENT ACTION REQUIRED: CONFIGURE ENVIRONMENT VARIABLES !!!"
+echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+echo
+echo "The refactored application now uses environment variables for configuration."
+echo "You MUST set the following variables in your server environment for the"
+echo "application to function correctly:"
+echo
+echo "  - DB_HOST (e.g., 'localhost')"
+echo "  - DB_NAME (e.g., 'pkm_system')"
+echo "  - DB_USER (e.g., 'pkm_user')"
+echo "  - DB_PASS (e.g., 'your_database_password')"
+echo "  - GITHUB_TOKEN (for publishing features)"
+echo "  - WEBHOOK_SECRET (a long random string for securing webhooks)"
+echo "  - API_INTERNAL_URL (e.g., 'https://arcreformas.com.br/api')"
+echo "  - CUT_WEBHOOK_URL (for the cut.ia.br integration)"
+echo
+echo "Consult your hosting panel (DirectAdmin) or server documentation for"
+echo "the correct method to set these environment variables for your PHP application."
 echo "========================================================"
 echo "SUCCESS: Deployment of the 'coolice' repository is complete."
 echo "Your website at 'coolicehost' should now be updated."

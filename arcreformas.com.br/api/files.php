@@ -2,10 +2,6 @@
 declare(strict_types=1);
 // Note: config.php and PKMSystem.php are loaded by index.php
 
-// Ensure CUT_WEBHOOK_URL is defined to avoid PHP notices
-if (!defined('CUT_WEBHOOK_URL')) {
-    define('CUT_WEBHOOK_URL', '');
-}
 function notify_cut_engine(string $fileUrl, string $filename, string $type, int $size): void
 {
     if (!defined('CUT_WEBHOOK_URL') || CUT_WEBHOOK_URL === '') {
@@ -109,7 +105,7 @@ function create_task_for_file(string $filename, string $file_url): void
     // Capture -> Process: create a task in 'inbox'
     $taskText = "Process new file: [{$filename}]({$file_url})";
     $taskPayload = ['op' => 'add', 'text' => $taskText];
-    $tasks_api_url = INBOX_URL . API_BASE_URL . '/tasks/inbox';
+    $tasks_api_url = (defined('API_INTERNAL_URL') ? API_INTERNAL_URL : '/api') . '/tasks/inbox';
 
     PKMSystem::logEvent('dependency_call_started', ['system' => 'self:tasks_api', 'url' => $tasks_api_url]);
 
