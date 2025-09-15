@@ -130,7 +130,7 @@ function create_task_for_file(string $filename, string $file_url): void
 
 function upload_new_file(): void
 {
-    PKMSystem::logEvent('file_upload_started', []);
+    PKMSystem::logEvent('file_upload_started');
 
     if (!isset($_FILES['fileToUpload'])) {
         PKMSystem::logEvent('file_upload_failed', ['reason' => 'No file data in fileToUpload field']);
