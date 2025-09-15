@@ -50,12 +50,18 @@ CREATE TABLE IF NOT EXISTS links (
     INDEX idx_created (created_at)
 ) ENGINE=InnoDB;
 
--- Events table for audit logging
-CREATE TABLE IF NOT EXISTS events (
-    id VARCHAR(16) PRIMARY KEY,
-    event_type VARCHAR(50) NOT NULL,
-    event_data JSON,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_type (event_type),
-    INDEX idx_created (created_at)
-) ENGINE=InnoDB;
+    public static function logEvent(string $type, array $data): void {
+        try {
+            $pdo = self::getPDO();
+            $stmt = $pdo->prepare("INSERT INTO events (id, event_type, event_data) VALUES (?, ?, ?)");
+            $stmt->execute([
+                self::generateId(),
+                $type,
+                json_encode($data) // Store data as JSON string
+            ]);
+        } catch (PDOException $e) {
+            // Log to PHP's error log if database insertion fails
+            error_log("CRITICAL: Failed to log event to database (Type: {$type}). Error: " . $e->getMessage());
+            // Optionally, you could re-implement the file-based logging here as a last resort.
+        }
+    }
