@@ -39,7 +39,18 @@ function handleGetBoard(PDO $pdo, string $board_slug): void {
     $board = $stmt->fetch();
 
     if (!$board) {
-        PKMSystem::emitJson(['error' => 'Board not found'], 404);
+        $defaultBoard = [
+            'slug' => $board_slug,
+            'title' => 'New Board',
+            'tasks' => [],
+            'created' => time(),
+            'updated' => time()
+        ];
+        $currentTime = time();
+        $etag = md5($defaultBoard['updated'] . $defaultBoard['created'] . $board_slug);
+        $lastModified = $currentTime;
+        PKMSystem::setCacheHeaders($etag, $lastModified);
+        PKMSystem::emitJson($defaultBoard);
         return;
     }
 
