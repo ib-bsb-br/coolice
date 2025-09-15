@@ -230,6 +230,13 @@ function trigger_github_workflow(): void {
         CURLOPT_TIMEOUT => 5
     ]);
 
-    curl_exec($ch);
+    $response = curl_exec($ch);
+    if ($response === false) {
+        PKMSystem::logEvent('dependency_call_failed', [
+            'system' => 'github_workflow',
+            'error' => curl_error($ch),
+            'url' => $url
+        ]);
+    }
     curl_close($ch);
 }
