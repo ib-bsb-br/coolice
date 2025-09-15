@@ -109,7 +109,7 @@ function create_task_for_file(string $filename, string $file_url): void
     // Capture -> Process: create a task in 'inbox'
     $taskText = "Process new file: [{$filename}]({$file_url})";
     $taskPayload = ['op' => 'add', 'text' => $taskText];
-$tasks_api_url = INBOX_URL . API_BASE_URL . '/tasks/inbox';
+    $tasks_api_url = INBOX_URL . API_BASE_URL . '/tasks/inbox';
 
     PKMSystem::logEvent('dependency_call_started', ['system' => 'self:tasks_api', 'url' => $tasks_api_url]);
 
