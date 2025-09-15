@@ -5,6 +5,9 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../src/config.php';
 require_once __DIR__ . '/../../src/PKMSystem.php';
 
+// Initialize request context (timing, correlation ID) and log start.
+PKMSystem::initRequestContext();
+
 // Set security headers for all responses.
 PKMSystem::setSecurityHeaders();
 
