@@ -83,8 +83,11 @@ for dir in "${NEW_STORAGE_DIRS[@]}"; do
         mkdir -p "$dir"
         echo "✓ Created $dir/ directory"
     fi
-    # Set permissions. Note: 775 may be required if the web server runs as a different user in the same group.
-    set_perms "$dir" 755 "Set permissions on $dir directory"
+    # Set permissions to 775 for these directories.
+    # This allows the web server (if running as part of the same group)
+    # to write to these directories, which is necessary for uploads, logging, etc.
+    # This is a safe choice that is more functional than 755 but avoids 777.
+    set_perms "$dir" 775 "Set web-writable permissions (775) on $dir directory"
 done
 
 # 6. Set script permissions
