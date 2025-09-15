@@ -54,8 +54,7 @@ define('CACHE_TTL', 3600); // 1 hour
 // Initialize directories
 foreach ([UPLOAD_DIR, TEMP_DIR, DATA_DIR] as $dir) {
     if (!is_dir($dir)) {
-        // Check if mkdir fails and the directory doesn't exist.
-        if (!mkdir($dir, 0755, true) && !is_dir($dir)) {
+        if (!mkdir($dir, 0755, true)) {
             // Log error if directory creation fails.
             error_log("Failed to create directory: " . $dir);
         }
