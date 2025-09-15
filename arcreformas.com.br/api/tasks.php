@@ -101,11 +101,17 @@ function handle_task_operation(PDO $pdo, string $board_slug): void {
                 $text = trim((string)($input['text'] ?? ''));
                 if ($text !== '' && strlen($text) <= MAX_TEXT_LENGTH) {
                     $id = PKMSystem::generateId();
+
+                    // Get the current max sort_order for this board in a separate query
+                    $sort_stmt = $pdo->prepare("SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks WHERE board_slug = ?");
+                    $sort_stmt->execute([$board_slug]);
+                    $next_sort_order = $sort_stmt->fetchColumn();
+
                     $stmt = $pdo->prepare("
                         INSERT INTO tasks (id, board_slug, text, sort_order)
-                        VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM tasks t WHERE t.board_slug = ?))
+                        VALUES (?, ?, ?, ?)
                     ");
-                    $stmt->execute([$id, $board_slug, $text, $board_slug]);
+                    $stmt->execute([$id, $board_slug, $text, $next_sort_order]);
                     $result = ['id' => $id];
 
                     PKMSystem::logEvent('task_added', [

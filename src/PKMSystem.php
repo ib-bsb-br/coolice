@@ -40,17 +40,6 @@ class PKMSystem {
         $filename = preg_replace('/[^\w\s\-\.]/', '_', $filename);
         $filename = preg_replace('/\s+/', '_', $filename);
         $filename = trim($filename, '.-_');
-        // Remove any directory separators
-        $filename = str_replace(['/', '\\'], '_', $filename);
-        // Replace any character that is not a word character, whitespace, dash, or dot with underscore (dots allowed except at start/end)
-        $filename = preg_replace('/[^\w\s\-.]/', '_', $filename);
-        // Replace whitespace with underscores
-        $filename = preg_replace('/\s+/', '_', $filename);
-        // Remove leading/trailing dots, dashes, and underscores
-        $filename = trim($filename, '-_');
-        // Prevent leading dots (hidden files)
-        $filename = ltrim($filename, '.');
-        // If filename is empty, use a default
         return $filename ?: 'unnamed_file';
     }
 
@@ -98,7 +87,7 @@ class PKMSystem {
         return false;
     }
 
-    public static function emitJson(mixed $data, int $statusCode = 200): void {
+    public static function emitJson($data, int $statusCode = 200): void {
         // Log the end of the request including duration
         $duration_ms = (self::$requestStartTime !== null)
             ? (microtime(true) - self::$requestStartTime) * 1000
@@ -158,31 +147,4 @@ class PKMSystem {
 
         return $httpCode >= 200 && $httpCode < 300;
     }
-
-    public static function sendJsonPostRequest(string $url, array $payload, array $headers = [], int $timeout = 5, int $connectTimeout = 2): array {
-        $ch = curl_init($url);
-        $defaultHeaders = ['Content-Type: application/json'];
-        $allHeaders = array_merge($defaultHeaders, $headers);
-
-        curl_setopt_array($ch, [
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($payload),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => $allHeaders,
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_CONNECTTIMEOUT => $connectTimeout
-        ]);
-
-        $response = curl_exec($ch);
-        $error = curl_error($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        return [
-            'success' => ($response !== false && $httpCode >= 200 && $httpCode < 300),
-            'http_code' => $httpCode,
-            'response' => $response,
-            'error' => $error
-        ];
-    }    
 }
